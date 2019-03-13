@@ -23,37 +23,28 @@
   function parseSignature(signature) {
     var tokens = S.chain (S.splitOn (' '))
                          (signature.split (/([(][)]|[{][}]|[({,})])/));
-    var context = {
-      value: [],
-      depth: 0,
-      push: function(c) {
-        if (c === '(') this.depth += 1;
-        this.value.push (c);
-      },
-      pop: function() {
-        var c = this.value.pop ();
-        if (c === '(') this.depth -= 1;
-        return c;
-      }
-    };
+    var context = [];
+    var depth = 0;
     var result = [];
     for (var idx = 0; idx < tokens.length; idx += 1) {
       var token = tokens[idx];
       if (token === '(') {
         context.push (token);
+        depth += 1;
       } else if (token === ')') {
         if (context.pop () !== '(') return null;
+        depth -= 1;
       } else if (token === '{') {
         context.push (token);
-        result.push (S.Pair (context.depth) (token));
+        result.push (S.Pair (depth) (token));
       } else if (token === '}') {
         if (context.pop () !== '{') return null;
-        result.push (S.Pair (context.depth) (token));
+        result.push (S.Pair (depth) (token));
       } else if (token !== '') {
-        result.push (S.Pair (context.depth) (token));
+        result.push (S.Pair (depth) (token));
       }
     }
-    if (context.value.length > 0) return null;
+    if (context.length > 0) return null;
     return result;
   }
 
