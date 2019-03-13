@@ -1,0 +1,28 @@
+{
+  "name": "sanctuary-search",
+  "version": "0.0.0",
+  "description": "Find functions by name or type signature",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/sanctuary-js/sanctuary-search.git"
+  },
+  "files": [
+    "/LICENSE",
+    "/README.md",
+    "/index.js",
+    "/package.json"
+  ],
+  "dependencies": {
+    "sanctuary": "1.0.x"
+  },
+  "devDependencies": {
+    "sanctuary-scripts": "3.0.x"
+  },
+  "scripts": {
+    "doctest": "sanctuary-doctest",
+    "lint": "sanctuary-lint",
+    "release": "sanctuary-release",
+    "test": "npm run lint && sanctuary-test && npm run doctest"
+  }
+}
