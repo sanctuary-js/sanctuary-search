@@ -19,6 +19,13 @@
 
   'use strict';
 
+  //  S_pair :: (a -> b -> c) -> Pair a b -> c
+  //
+  //  To be added in sanctuary-js/sanctuary#609.
+  var S_pair = S.curry2 (function(f, pair) {
+    return f (pair.fst) (pair.snd);
+  });
+
   //  parseSignature :: String -> Maybe (Array (Pair Integer String))
   function parseSignature(signature) {
     var tokens = S.chain (S.splitOn (' '))
@@ -100,7 +107,9 @@
            legalBoundary (tokens) (range.snd - 1) (range.snd);
   });
 
-  //  sliceMatches :: Array (Pair (Pair Integer String) (Pair Integer String)) -> Boolean
+  //  sliceMatches
+  //  :: Array (Pair (Pair Integer String) (Pair Integer String))
+  //  -> Boolean
   function sliceMatches(pairs) {
     var delta = pairs[0].snd.fst - pairs[0].fst.fst;
     var typeVarMap = Object.create (null);
@@ -169,8 +178,12 @@
       return [];
     } ());
 
-    var pair = loop (matches.length > 0, matches.length, matches);
-    return S.tagBy (S.K (pair.fst)) (format (pair.snd));
+    return S_pair (S.tagBy)
+                  (S.bimap (S.K)
+                           (format)
+                           (loop (matches.length > 0,
+                                  matches.length,
+                                  matches)));
   });
 
   //  matchStrings
