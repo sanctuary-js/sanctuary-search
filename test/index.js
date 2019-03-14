@@ -46,8 +46,8 @@ suite ('match', () => {
        (S.Right ('@[match]@ :: NonGlobalRegExp -> String -> Maybe { @[match]@ :: String, groups :: Array (Maybe String) }'));
     eq (match ('matchAll :: GlobalRegExp -> String -> Array { match :: String, groups :: Array (Maybe String) }') ('match'))
        (S.Right ('@[match]@All :: GlobalRegExp -> String -> Array { @[match]@ :: String, groups :: Array (Maybe String) }'));
-//  eq (match ('chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b') ('a -> m'))
-//     (S.Left ('chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b'));
+    eq (match ('chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b') ('a -> m'))
+       (S.Left ('chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b'));
   });
 
 });

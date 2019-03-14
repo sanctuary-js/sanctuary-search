@@ -70,13 +70,24 @@
     return s + repeat (')', depth);
   }
 
-  //  legalBoundary :: (Array (Pair Integer String), Integer) -> Boolean
-  function legalBoundary(tokens, idx) {
-    var l = tokens[idx - 1];
-    var r = tokens[idx];
-    return l == null || /^(?![A-Za-z])/.test (l.snd) ||
-           r == null || /^(?![A-Za-z])/.test (r.snd) ||
-           l.fst !== r.fst;
+  //  at :: (Integer, Array a) -> Maybe a
+  function at(idx, xs) {
+    return idx >= 0 && idx < xs.length ? S.Just (xs[idx]) : S.Nothing;
+  }
+
+  //  legalBoundary :: (Array (Pair Integer String), Integer, Integer) -> Boolean
+  function legalBoundary(tokens, inner, outer) {
+    var filter = S.filter (S.compose (S.test (/^[A-Za-z]/)) (S.snd));
+    return S.fromMaybe (true)
+                       (S.lift2 (S.on (S.lt) (S.fst))
+                                (filter (at (inner, tokens)))
+                                (filter (at (outer, tokens))));
+  }
+
+  //  legalSlice :: (Array (Pair Integer String), Pair Integer Integer) -> Boolean
+  function legalSlice(tokens, range) {
+    return legalBoundary (tokens, range.fst, range.fst - 1) &&
+           legalBoundary (tokens, range.snd - 1, range.snd);
   }
 
   //  sliceMatches :: Array (Pair (Pair Integer String) (Pair Integer String)) -> Boolean
@@ -113,8 +124,8 @@
         offset === actualTokens.length ?
         S.Pair (matched) (matches) :
         offset + searchTokens.length <= actualTokens.length
-        && legalBoundary (actualTokens, offset)
-        && legalBoundary (actualTokens, offset + searchTokens.length)
+        && legalSlice (actualTokens,
+                       S.Pair (offset) (offset + searchTokens.length))
         && sliceMatches (S.zip (searchTokens)
                                (slice = actualTokens.slice (
                                           offset,
