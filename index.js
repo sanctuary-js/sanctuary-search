@@ -129,6 +129,21 @@
     }) (pairs);
   }
 
+  //  highlightSubstring :: (String -> String) -> String -> String -> String
+  var highlightSubstring = S.curry3 (function(em, s, t) {
+    return S.pipe ([
+      S.bimap (S.toLower) (S.toLower),
+      S.Just,
+      S.reject (S_pair (S.equals)),
+      S.map (function(pair) { return pair.fst.indexOf (pair.snd); }),
+      S.filter (S.gte (0)),
+      S.map (function(i) {
+        var j = i + t.length;
+        return s.slice (0, i) + em (s.slice (i, j)) + s.slice (j);
+      })
+    ]) (S.Pair (s) (t));
+  });
+
   //  matchTokens
   //  :: (String -> String)
   //  -> Array (Pair NonNegativeInteger String)
@@ -160,23 +175,15 @@
       );
     }
 
-    var matches = (function() {
-      //  Special case for matching by function name.
-      if (searchTokens.length === 1) {
-        var search = searchTokens[0].snd, searchLower = search.toLowerCase ();
-        var actual = actualTokens[0].snd, actualLower = actual.toLowerCase ();
-        if (searchLower !== actualLower) {
-          var idx = actualLower.indexOf (searchLower);
-          if (idx >= 0) {
-            return [S.Pair (0)
-                           (actual.slice (0, idx) +
-                            em (actual.slice (idx, idx + search.length)) +
-                            actual.slice (idx + search.length))];
-          }
-        }
-      }
-      return [];
-    } ());
+    var matches =
+    S.maybe ([])
+            (S.compose (S.of (Array)) (S.Pair (0)))
+            (S.join (S.lift2 (S.on (highlightSubstring (em)) (S.snd))
+                             (S.head (actualTokens))
+                             (S.chain (S.head)
+                                      (S.filter (S.compose (S.equals (1))
+                                                           (S.size))
+                                                (S.Just (searchTokens))))));
 
     return S_pair (S.tagBy)
                   (S.bimap (S.K)
