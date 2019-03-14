@@ -19,7 +19,7 @@
 
   'use strict';
 
-  //  parseSignature :: String -> Nullable (Array (Pair Integer String))
+  //  parseSignature :: String -> Maybe (Array (Pair Integer String))
   function parseSignature(signature) {
     var tokens = S.chain (S.splitOn (' '))
                          (signature.split (/([(][)]|[{][}]|[({,})])/));
@@ -32,28 +32,28 @@
         context.push (token);
         depth += 1;
       } else if (token === ')') {
-        if (context.pop () !== '(') return null;
+        if (context.pop () !== '(') return S.Nothing;
         depth -= 1;
       } else if (token === '{') {
         context.push (token);
         result.push (S.Pair (depth) (token));
       } else if (token === '}') {
-        if (context.pop () !== '{') return null;
+        if (context.pop () !== '{') return S.Nothing;
         result.push (S.Pair (depth) (token));
       } else if (token !== '') {
         result.push (S.Pair (depth) (token));
       }
     }
-    if (context.length > 0) return null;
-    return result;
+    if (context.length > 0) return S.Nothing;
+    return S.Just (result);
   }
 
-  //  repeat :: (String, Integer) -> String
-  function repeat(s, n) {
+  //  repeat :: String -> Integer -> String
+  var repeat = S.curry2 (function(s, n) {
     var result = '';
     while (result.length < n) result += s;
     return result;
-  }
+  });
 
   //  format :: Array (Pair Integer String) -> String
   function format(pairs) {
@@ -61,34 +61,44 @@
     var depth = 0;
     for (var idx = 0; idx < pairs.length; idx += 1) {
       var pair = pairs[idx];
-      s += repeat (')', depth - pair.fst) +
+      s += repeat (')') (depth - pair.fst) +
            (s === '' || pair.snd === ',' ? '' : ' ') +
-           repeat ('(', pair.fst - depth) +
+           repeat ('(') (pair.fst - depth) +
            pair.snd;
       depth = pair.fst;
     }
-    return s + repeat (')', depth);
+    return s + repeat (')') (depth);
   }
 
-  //  at :: (Integer, Array a) -> Maybe a
-  function at(idx, xs) {
+  //  at :: Integer -> Array a -> Maybe a
+  var at = S.curry2 (function(idx, xs) {
     return idx >= 0 && idx < xs.length ? S.Just (xs[idx]) : S.Nothing;
-  }
+  });
 
-  //  legalBoundary :: (Array (Pair Integer String), Integer, Integer) -> Boolean
-  function legalBoundary(tokens, inner, outer) {
+  //  legalBoundary
+  //  :: Array (Pair NonNegativeInteger String)
+  //  -> Integer
+  //  -> Integer
+  //  -> Boolean
+  var legalBoundary = S.curry3 (function(tokens, inner, outer) {
     var filter = S.filter (S.compose (S.test (/^[A-Za-z]/)) (S.snd));
-    return S.fromMaybe (true)
-                       (S.lift2 (S.on (S.lt) (S.fst))
-                                (filter (at (inner, tokens)))
-                                (filter (at (outer, tokens))));
-  }
+    var innerToken = filter (at (inner) (tokens));
+    var outerToken = filter (at (outer) (tokens));
+    return S.maybe (false)
+                   (S.compose (S.flip (S.maybe (true))
+                                      (outerToken))
+                              (S.on (S.lt) (S.fst)))
+                   (innerToken);
+  });
 
-  //  legalSlice :: (Array (Pair Integer String), Pair Integer Integer) -> Boolean
-  function legalSlice(tokens, range) {
-    return legalBoundary (tokens, range.fst, range.fst - 1) &&
-           legalBoundary (tokens, range.snd - 1, range.snd);
-  }
+  //  legalSlice
+  //  :: Array (Pair NonNegativeInteger String)
+  //  -> Pair NonNegativeInteger NonNegativeInteger
+  //  -> Boolean
+  var legalSlice = S.curry2 (function(tokens, range) {
+    return legalBoundary (tokens) (range.fst) (range.fst - 1) &&
+           legalBoundary (tokens) (range.snd - 1) (range.snd);
+  });
 
   //  sliceMatches :: Array (Pair (Pair Integer String) (Pair Integer String)) -> Boolean
   function sliceMatches(pairs) {
@@ -110,22 +120,19 @@
     }) (pairs);
   }
 
-  //  match :: (String -> String, String, String) -> Either String String
-  function match(em, signatureString, searchString) {
-    var actualTokens = parseSignature (signatureString);
-    var searchTokens = parseSignature (searchString);
-    if (actualTokens == null || searchTokens == null) {
-      return S.Left (signatureString);
-    }
-
+  //  matchTokens
+  //  :: (String -> String)
+  //  -> Array (Pair NonNegativeInteger String)
+  //  -> Array (Pair NonNegativeInteger String)
+  //  -> Either String String
+  var matchTokens = S.curry3 (function(em, actualTokens, searchTokens) {
     function loop(matched, offset, matches) {
       var depth, slice;
       return (
         offset === actualTokens.length ?
         S.Pair (matched) (matches) :
-        offset + searchTokens.length <= actualTokens.length
-        && legalSlice (actualTokens,
-                       S.Pair (offset) (offset + searchTokens.length))
+        legalSlice (actualTokens)
+                   (S.Pair (offset) (offset + searchTokens.length))
         && sliceMatches (S.zip (searchTokens)
                                (slice = actualTokens.slice (
                                           offset,
@@ -164,10 +171,20 @@
 
     var pair = loop (matches.length > 0, matches.length, matches);
     return S.tagBy (S.K (pair.fst)) (format (pair.snd));
-  }
+  });
 
-  return {
-    match: S.curry3 (match)
-  };
+  //  matchStrings
+  //  :: (String -> String)
+  //  -> String
+  //  -> String
+  //  -> Either String String
+  var matchStrings = S.curry3 (function(em, signatureString, searchString) {
+    return S.fromMaybe (S.Left (signatureString))
+                       (S.lift2 (matchTokens (em))
+                                (parseSignature (signatureString))
+                                (parseSignature (searchString)));
+  });
+
+  return matchStrings;
 
 }));

@@ -21,7 +21,7 @@ function eq(actual) {
 suite ('match', () => {
 
   test ('TK', () => {
-    const match = search.match (s => '@[' + s + ']@');
+    const match = search (s => '@[' + s + ']@');
 
     eq (match ('I :: a -> a') ('(')) (S.Left ('I :: a -> a'));
     eq (match ('I :: a -> a') (')')) (S.Left ('I :: a -> a'));
