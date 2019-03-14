@@ -29,7 +29,7 @@
   //  parseSignature :: String -> Maybe (Array (Pair Integer String))
   function parseSignature(signature) {
     var tokens = S.chain (S.splitOn (' '))
-                         (signature.split (/([(][)]|[{][}]|[({,})])/));
+                         (signature.split (/([(][)]|[{][}]|[({,?})])/));
     var context = [];
     var depth = 0;
     var result = [];
@@ -69,7 +69,7 @@
     for (var idx = 0; idx < pairs.length; idx += 1) {
       var pair = pairs[idx];
       s += repeat (')') (depth - pair.fst) +
-           (s === '' || pair.snd === ',' ? '' : ' ') +
+           (s === '' || pair.snd === ',' || pair.snd === '?' ? '' : ' ') +
            repeat ('(') (pair.fst - depth) +
            pair.snd;
       depth = pair.fst;
@@ -82,29 +82,24 @@
     return idx >= 0 && idx < xs.length ? S.Just (xs[idx]) : S.Nothing;
   });
 
-  //  legalBoundary
-  //  :: Array (Pair NonNegativeInteger String)
-  //  -> Integer
-  //  -> Integer
-  //  -> Boolean
-  var legalBoundary = S.curry3 (function(tokens, inner, outer) {
-    var filter = S.filter (S.compose (S.test (/^[A-Za-z]/)) (S.snd));
-    var innerToken = filter (at (inner) (tokens));
-    var outerToken = filter (at (outer) (tokens));
-    return S.maybe (false)
-                   (S.compose (S.flip (S.maybe (true))
-                                      (outerToken))
-                              (S.on (S.lt) (S.fst)))
-                   (innerToken);
-  });
-
   //  legalSlice
   //  :: Array (Pair NonNegativeInteger String)
   //  -> Pair NonNegativeInteger NonNegativeInteger
   //  -> Boolean
   var legalSlice = S.curry2 (function(tokens, range) {
-    return legalBoundary (tokens) (range.fst) (range.fst - 1) &&
-           legalBoundary (tokens) (range.snd - 1) (range.snd);
+    return S.maybe (false)
+                   (inner => S.maybe (true)
+                                     (outer => S.test (/^(?![A-Za-z])/) (outer.snd) ||
+                                               outer.fst < inner.fst)
+                                     (at (range.fst - 1) (tokens)))
+                   (at (range.fst) (tokens)) &&
+           S.maybe (false)
+                   (inner => S.maybe (true)
+                                     (outer => outer.snd !== '?' &&
+                                               (S.test (/^(?![A-Za-z])/) (outer.snd) ||
+                                                outer.fst < inner.fst))
+                                     (at (range.snd) (tokens)))
+                   (at (range.snd - 1) (tokens));
   });
 
   //  sliceMatches
