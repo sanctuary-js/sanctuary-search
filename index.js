@@ -97,8 +97,10 @@
              S.maybe (true)
                      (function(t) {
                         return t.snd !== '?' &&
-                               (t.fst < closing.fst ||
-                                S.test (/^(?![A-Za-z])/) (t.snd));
+                               S.compose (S_pair (S.or))
+                                         (S.bimap (S.lt (closing.fst))
+                                                  (S.test (/^(?![A-Za-z])/)))
+                                         (t);
                       })
                      (at (range.snd) (tokens));
     }
