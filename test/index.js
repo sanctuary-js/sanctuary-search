@@ -60,6 +60,8 @@ suite ('match', () => {
        (S.Right ('toMaybe :: @[a?]@ -> Maybe a'));
     eq (match ('toMaybe :: a? -> Maybe a') ('x? -> Maybe x'))
        (S.Right ('toMaybe :: @[a? -> Maybe a]@'));
+    eq (match ('curry3 :: ((a, b, c) -> d) -> a -> b -> c -> d') ('x -> y'))
+       (S.Right ('curry3 :: ((a, b, c) -> d) -> @[a -> b]@ -> c -> d'));
   });
 
 });
