@@ -120,7 +120,7 @@
     return S.reduce
       (S.flip (function(pair) {
          return S.chain (function(state) {
-           var typeVarMap = state.snd;
+           var typeVarMap = state.fst;
            return (
              pair.fst.fst === pair.snd.fst - delta ?
                /^[a-z]$/.test (pair.fst.snd) ?
@@ -131,8 +131,8 @@
                        S.Nothing :
                      S.elem (pair.snd.snd) (typeVarMap) ?
                        S.Nothing :
-                       S.Just (S.map (S.insert (pair.fst.snd) (pair.snd.snd))
-                                     (state)) :
+                       S.Just (S.mapLeft (S.insert (pair.fst.snd) (pair.snd.snd))
+                                         (state)) :
                    S.Nothing :
                  pair.fst.snd === pair.snd.snd ?
                    S.Just (state) :
@@ -141,7 +141,10 @@
            );
          });
        }))
-      (S.reject (S.K (delta < 0)) (S.Just (S.Pair (slice) (typeVarMap))))
+      (S.reject (S.K (delta < 0))
+                (S.Just (S.Pair (typeVarMap)
+                                (S.Pair (searchTokens)
+                                        (slice)))))
       (S.zip (searchTokens) (slice));
   });
 
@@ -180,17 +183,16 @@
            );
          })
         (function(pair) {
-           var depth = S.fromMaybe (0)
-                                   (S.lift2 (S.on (S.sub) (S.fst))
-                                            (at (0) (searchTokens))
-                                            (at (offset) (actualTokens)));
+           var searchTokens = pair.snd.fst;
+           var slice = pair.snd.snd;
+           var depth = slice[0].fst - searchTokens[0].fst;
            return loop (
-             pair.snd,
+             pair.fst,
              true,
              offset + searchTokens.length,
              S.append (S.Pair (depth)
                               (em (format (S.map (S.mapLeft (S.sub (depth)))
-                                                 (pair.fst)))))
+                                                 (slice)))))
                       (matches)
            );
          })
