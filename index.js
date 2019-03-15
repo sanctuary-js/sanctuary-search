@@ -106,9 +106,11 @@
     if (isAlphabetical (a)) return S.Nothing;
     if (isAlphabetical (z)) return S.Nothing;
 
-    var depthDecreases = S.on (S.gt) (S.map (S.fst));
-    if (depthDecreases (b) (a)) return S.Nothing;
-    if (depthDecreases (y) (z)) return S.Nothing;
+    if (S.gt (S.Just (0)) (S.map (S.fst) (S.head (searchTokens)))) {
+      var depthContinues = S.on (S.equals) (S.map (S.fst));
+      if (depthContinues (b) (a)) return S.Nothing;
+      if (depthContinues (y) (z)) return S.Nothing;
+    }
 
     return S.reduce
       (S.flip (function(pair) {
