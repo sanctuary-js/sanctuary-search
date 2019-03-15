@@ -30,6 +30,8 @@ suite ('match', () => {
 
     eq (match ('I :: a -> a') ('a'))
        (S.Right ('I :: @[a]@ -> @[a]@'));
+    eq (match ('K :: a -> b -> a') ('x'))
+       (S.Right ('K :: @[a]@ -> b -> @[a]@'));
     eq (match ('K :: a -> b -> a') ('a -> b'))
        (S.Right ('K :: @[a -> b]@ -> a'));
     eq (match ('K :: a -> b -> a') ('x -> y'))
@@ -42,6 +44,8 @@ suite ('match', () => {
        (S.Left ('K :: a -> b -> a'));
     eq (match ('map :: Functor f => (a -> b) -> f a -> f b') ('a -> b'))
        (S.Right ('map :: Functor f => (@[a -> b]@) -> f a -> f b'));
+    eq (match ('bimap :: Bifunctor f => (a -> b) -> (c -> d) -> f a c -> f b d') ('a c -> f b d'))
+       (S.Left ('bimap :: Bifunctor f => (a -> b) -> (c -> d) -> f a c -> f b d'));
     eq (match ('match :: NonGlobalRegExp -> String -> Maybe { match :: String, groups :: Array (Maybe String) }') ('match'))
        (S.Right ('@[match]@ :: NonGlobalRegExp -> String -> Maybe { @[match]@ :: String, groups :: Array (Maybe String) }'));
     eq (match ('matchAll :: GlobalRegExp -> String -> Array { match :: String, groups :: Array (Maybe String) }') ('match'))
@@ -51,7 +55,7 @@ suite ('match', () => {
     eq (match ('chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b') ('a -> m'))
        (S.Left ('chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b'));
     eq (match ('toMaybe :: a? -> Maybe a') ('x'))
-       (S.Right ('toMaybe :: a? -> Maybe @[a]@'));
+       (S.Left ('toMaybe :: a? -> Maybe a'));
     eq (match ('toMaybe :: a? -> Maybe a') ('x?'))
        (S.Right ('toMaybe :: @[a?]@ -> Maybe a'));
     eq (match ('toMaybe :: a? -> Maybe a') ('x? -> Maybe x'))
