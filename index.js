@@ -180,7 +180,10 @@
            );
          })
         (function(pair) {
-           var depth = pair.fst[0].fst;
+           var depth = S.fromMaybe (0)
+                                   (S.lift2 (S.on (S.sub) (S.fst))
+                                            (at (0) (searchTokens))
+                                            (at (offset) (actualTokens)));
            return loop (
              pair.snd,
              true,
