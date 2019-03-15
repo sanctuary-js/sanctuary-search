@@ -180,8 +180,7 @@
            );
          })
         (function(pair) {
-           var depth = S.min (pair.fst[0].fst)
-                             (pair.fst[pair.fst.length - 1].fst);
+           var depth = pair.fst[0].fst;
            return loop (
              pair.snd,
              true,
