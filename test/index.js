@@ -68,6 +68,8 @@ suite ('match', () => {
        (S.Right ('T :: a -> (@[a -> b]@) -> b'));
     eq (match ('T :: a -> (a -> b) -> b') ('(a -> b)'))
        (S.Right ('T :: a -> @[(a -> b)]@ -> b'));
+//  eq (match ('lift2 :: Apply f => (a -> b -> c) -> f a -> f b -> f c') ('(a -> b)'))
+//     (S.Left ('lift2 :: Apply f => (a -> b -> c) -> f a -> f b -> f c'));
   });
 
 });

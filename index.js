@@ -82,74 +82,60 @@
     return idx >= 0 && idx < xs.length ? S.Just (xs[idx]) : S.Nothing;
   });
 
-  //  createSlice
-  //  :: Array (Pair NonNegativeInteger String)
-  //  -> Pair NonNegativeInteger NonNegativeInteger
-  //  -> Boolean
-  var createSlice = S.curry2 (function(tokens, range) {
-    function f(opening, closing) {
-      return opening.snd !== '?' &&
-             S.maybe (true)
-                     (S.compose (S_pair (S.or))
-                                (S.bimap (S.lt (opening.fst))
-                                         (S.test (/^(?![A-Za-z])/))))
-                     (at (range.fst - 1) (tokens)) &&
-             S.maybe (true)
-                     (function(t) {
-                        return t.snd !== '?' &&
-                               S.compose (S_pair (S.or))
-                                         (S.bimap (S.lt (closing.fst))
-                                                  (S.test (/^(?![A-Za-z])/)))
-                                         (t);
-                      })
-                     (at (range.snd) (tokens));
-    }
-    return S.chain (S.boolean (S.Nothing)
-                              (S.Just (tokens.slice (range.fst, range.snd))))
-                   (S.lift2 (S.curry2 (f))
-                            (at (range.fst) (tokens))
-                            (at (range.snd - 1) (tokens)));
-  });
-
   //  sliceMatches
   //  :: Array (Pair (Pair Integer String) (Pair Integer String))
   //  -> Maybe (StrMap String)
   //  -> Maybe (StrMap String)
   var sliceMatches = S.curry4 (function(actualTokens, searchTokens, offset, typeVarMap) {
-    return S.chain (function(slice) {
-      var delta = slice[0].fst - searchTokens[0].fst;
-      return S.reduce
-        (S.flip (function(pair) {
-           return S.chain (function(state) {
-             var typeVarMap = state.fst;
-             return (
-               pair.fst.fst === pair.snd.fst - delta ?
-                 /^[a-z]$/.test (pair.fst.snd) ?
-                   /^[a-z]$/.test (pair.snd.snd) ?
-                     pair.fst.snd in typeVarMap ?
-                       typeVarMap[pair.fst.snd] === pair.snd.snd ?
-                         S.Just (state) :
-                         S.Nothing :
-                       S.elem (pair.snd.snd) (typeVarMap) ?
-                         S.Nothing :
-                         S.Just (S.mapLeft (S.insert (pair.fst.snd) (pair.snd.snd))
-                                           (state)) :
-                     S.Nothing :
-                   pair.fst.snd === pair.snd.snd ?
-                     S.Just (state) :
-                     S.Nothing :
-                 S.Nothing
-             );
-           });
-         }))
-        (S.reject (S.K (delta < 0))
-                  (S.Just (S.Pair (typeVarMap)
-                                  (S.Pair (searchTokens)
-                                          (slice)))))
-        (S.zip (searchTokens) (slice));
-    }) (createSlice (actualTokens)
-                    (S.Pair (offset)
-                            (offset + searchTokens.length)));
+    var a = at (offset - 1) (actualTokens);
+    var b = at (offset) (actualTokens);
+    var y = at (offset + searchTokens.length - 1) (actualTokens);
+    var z = at (offset + searchTokens.length) (actualTokens);
+
+    var slice = actualTokens.slice (offset, offset + searchTokens.length);
+    if (slice.length < searchTokens.length) return S.Nothing;
+
+    var delta = slice[0].fst - searchTokens[0].fst;
+    if (delta < 0) return S.Nothing;
+
+    var isQuestionMark = S.maybe (false) (S.compose (S.equals ('?')) (S.snd));
+    if (isQuestionMark (b)) return S.Nothing;
+    if (isQuestionMark (z)) return S.Nothing;
+
+    var isAlphabetical = S.maybe (false) (S.compose (S.test (/^[A-Za-z]/)) (S.snd));
+    if (isAlphabetical (a)) return S.Nothing;
+    if (isAlphabetical (z)) return S.Nothing;
+
+    var depthDecreases = S.on (S.gt) (S.map (S.fst));
+    if (depthDecreases (b) (a)) return S.Nothing;
+    if (depthDecreases (y) (z)) return S.Nothing;
+
+    return S.reduce
+      (S.flip (function(pair) {
+         return S.chain (function(state) {
+           var typeVarMap = state.fst;
+           return (
+             pair.fst.fst === pair.snd.fst - delta ?
+               /^[a-z]$/.test (pair.fst.snd) ?
+                 /^[a-z]$/.test (pair.snd.snd) ?
+                   pair.fst.snd in typeVarMap ?
+                     typeVarMap[pair.fst.snd] === pair.snd.snd ?
+                       S.Just (state) :
+                       S.Nothing :
+                     S.elem (pair.snd.snd) (typeVarMap) ?
+                       S.Nothing :
+                       S.Just (S.mapLeft (S.insert (pair.fst.snd) (pair.snd.snd))
+                                         (state)) :
+                   S.Nothing :
+                 pair.fst.snd === pair.snd.snd ?
+                   S.Just (state) :
+                   S.Nothing :
+               S.Nothing
+           );
+         });
+       }))
+      (S.Just (S.Pair (typeVarMap) (S.Pair (searchTokens) (slice))))
+      (S.zip (searchTokens) (slice));
   });
 
   //  highlightSubstring :: (String -> String) -> String -> String -> String
