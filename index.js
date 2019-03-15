@@ -102,10 +102,11 @@
                       })
                      (at (range.snd) (tokens));
     }
-    return S.fromMaybe (false)
-                       (S.lift2 (S.curry2 (f))
-                                (at (range.fst) (tokens))
-                                (at (range.snd - 1) (tokens)));
+    return S.chain (S.boolean (S.Nothing)
+                              (S.Just (tokens.slice (range.fst, range.snd))))
+                   (S.lift2 (S.curry2 (f))
+                            (at (range.fst) (tokens))
+                            (at (range.snd - 1) (tokens)));
   });
 
   //  sliceMatches
@@ -118,26 +119,25 @@
     range,
     typeVarMap_
   ) {
-    if (S.not (legalSlice (actualTokens) (range))) return S.Nothing;
+    return S.chain (function(slice) {
+      var pairs = S.zip (searchTokens) (slice);
+      var delta = slice[0].fst - searchTokens[0].fst;
+      var typeVarMap = typeVarMap_;
 
-    var slice = actualTokens.slice (range.fst, range.snd);
-    var pairs = S.zip (searchTokens) (slice);
-    var delta = slice[0].fst - searchTokens[0].fst;
-    var typeVarMap = typeVarMap_;
-
-    return S.all (function(pair) {
-      return pair.fst.fst === pair.snd.fst - delta
-             && (/^[a-z]$/.test (pair.fst.snd) ?
-                 /^[a-z]$/.test (pair.snd.snd)
-                 && (pair.fst.snd in typeVarMap ?
-                     typeVarMap[pair.fst.snd] === pair.snd.snd :
-                     S.not (S.elem (pair.snd.snd) (typeVarMap))
-                     && (typeVarMap = S.insert (pair.fst.snd)
-                                               (pair.snd.snd)
-                                               (typeVarMap),
-                         true)) :
-                 pair.fst.snd === pair.snd.snd);
-    }) (pairs) ? S.Just (S.Pair (slice) (typeVarMap)) : S.Nothing;
+      return S.all (function(pair) {
+        return pair.fst.fst === pair.snd.fst - delta
+               && (/^[a-z]$/.test (pair.fst.snd) ?
+                   /^[a-z]$/.test (pair.snd.snd)
+                   && (pair.fst.snd in typeVarMap ?
+                       typeVarMap[pair.fst.snd] === pair.snd.snd :
+                       S.not (S.elem (pair.snd.snd) (typeVarMap))
+                       && (typeVarMap = S.insert (pair.fst.snd)
+                                                 (pair.snd.snd)
+                                                 (typeVarMap),
+                           true)) :
+                   pair.fst.snd === pair.snd.snd);
+      }) (pairs) ? S.Just (S.Pair (slice) (typeVarMap)) : S.Nothing;
+    }) (legalSlice (actualTokens) (range));
   });
 
   //  highlightSubstring :: (String -> String) -> String -> String -> String
