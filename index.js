@@ -113,10 +113,9 @@
   //  :: Array (Pair (Pair Integer String) (Pair Integer String))
   //  -> Maybe (StrMap String)
   //  -> Maybe (StrMap String)
-  var sliceMatches = S.curry4 (function(
-    actualTokens,
+  var sliceMatches = S.curry3 (function(
+    maybeSlice,
     searchTokens,
-    range,
     typeVarMap_
   ) {
     return S.chain (function(slice) {
@@ -137,7 +136,7 @@
                            true)) :
                    pair.fst.snd === pair.snd.snd);
       }) (pairs) ? S.Just (S.Pair (slice) (typeVarMap)) : S.Nothing;
-    }) (legalSlice (actualTokens) (range));
+    }) (maybeSlice);
   });
 
   //  highlightSubstring :: (String -> String) -> String -> String -> String
@@ -187,9 +186,10 @@
                       (matches)
            );
          })
-        (sliceMatches (actualTokens)
+        (sliceMatches (legalSlice (actualTokens)
+                                  (S.Pair (offset)
+                                          (offset + searchTokens.length)))
                       (searchTokens)
-                      (S.Pair (offset) (offset + searchTokens.length))
                       (typeVarMap));
     }
 
