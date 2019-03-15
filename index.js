@@ -91,7 +91,8 @@
       return opening.snd !== '?' &&
              S.maybe (true)
                      (S.compose (S_pair (S.or))
-                                (S.bimap (fst => fst < opening.fst) (S.test (/^(?![A-Za-z])/))))
+                                (S.bimap (S.lt (opening.fst))
+                                         (S.test (/^(?![A-Za-z])/))))
                      (at (range.fst - 1) (tokens)) &&
              S.maybe (true)
                      (function(t) {
@@ -111,9 +112,18 @@
   //  :: Array (Pair (Pair Integer String) (Pair Integer String))
   //  -> Maybe (StrMap String)
   //  -> Maybe (StrMap String)
-  var sliceMatches = S.curry2 (function(pairs, typeVarMap_) {
-    var delta = pairs[0].snd.fst - pairs[0].fst.fst;
-    var typeVarMap = S.fromMaybe (Object.create (null)) (typeVarMap_);
+  var sliceMatches = S.curry4 (function(
+    actualTokens,
+    searchTokens,
+    range,
+    typeVarMap_
+  ) {
+    if (S.not (legalSlice (actualTokens) (range))) return S.Nothing;
+
+    var slice = actualTokens.slice (range.fst, range.snd);
+    var pairs = S.zip (searchTokens) (slice);
+    var delta = slice[0].fst - searchTokens[0].fst;
+    var typeVarMap = typeVarMap_;
 
     return S.all (function(pair) {
       return pair.fst.fst === pair.snd.fst - delta
@@ -127,7 +137,7 @@
                                                (typeVarMap),
                          true)) :
                  pair.fst.snd === pair.snd.snd);
-    }) (pairs) ? S.Just (typeVarMap) : S.Nothing;
+    }) (pairs) ? S.Just (S.Pair (slice) (typeVarMap)) : S.Nothing;
   });
 
   //  highlightSubstring :: (String -> String) -> String -> String -> String
@@ -151,33 +161,36 @@
   //  -> Array (Pair NonNegativeInteger String)
   //  -> Either String String
   var matchTokens = S.curry3 (function(em, actualTokens, searchTokens) {
-    function loop(typeVarMap_, matched, offset, matches) {
-      var depth, slice, typeVarMap;
-      return (
-        offset === actualTokens.length ?
-        S.Pair (matched) (matches) :
-        legalSlice (actualTokens)
-                   (S.Pair (offset) (offset + searchTokens.length))
-        && S.isJust (typeVarMap =
-                     sliceMatches (S.zip (searchTokens)
-                                         (slice =
-                                          actualTokens.slice (offset,
-                                                              offset + searchTokens.length)))
-                                  (typeVarMap_)) ?
-        loop (typeVarMap,
-              true,
-              offset + searchTokens.length,
-              S.append (S.Pair (depth = S.min (slice[0].fst)
-                                              (slice[slice.length - 1].fst))
-                               (em (format (S.map (S.mapLeft (S.sub (depth)))
-                                                  (slice)))))
-                       (matches)) :
-        loop (typeVarMap_,
-              matched,
-              offset + 1,
-              S.append (actualTokens[offset])
-                       (matches))
-      );
+    function loop(typeVarMap, matched, offset, matches) {
+      if (offset === actualTokens.length) return S.Pair (matched) (matches);
+
+      return S.maybe_
+        (function() {
+           return loop (
+             typeVarMap,
+             matched,
+             offset + 1,
+             S.append (actualTokens[offset])
+                      (matches)
+           );
+         })
+        (function(pair) {
+           var depth = S.min (pair.fst[0].fst)
+                             (pair.fst[pair.fst.length - 1].fst);
+           return loop (
+             pair.snd,
+             true,
+             offset + searchTokens.length,
+             S.append (S.Pair (depth)
+                              (em (format (S.map (S.mapLeft (S.sub (depth)))
+                                                 (pair.fst)))))
+                      (matches)
+           );
+         })
+        (sliceMatches (actualTokens)
+                      (searchTokens)
+                      (S.Pair (offset) (offset + searchTokens.length))
+                      (typeVarMap));
     }
 
     var matches =
@@ -193,7 +206,7 @@
     return S_pair (S.tagBy)
                   (S.bimap (S.K)
                            (format)
-                           (loop (S.Nothing,
+                           (loop (Object.create (null),
                                   matches.length > 0,
                                   matches.length,
                                   matches)));
