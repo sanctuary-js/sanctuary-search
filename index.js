@@ -113,30 +113,24 @@
   //  :: Array (Pair (Pair Integer String) (Pair Integer String))
   //  -> Maybe (StrMap String)
   //  -> Maybe (StrMap String)
-  var sliceMatches = S.curry3 (function(
-    maybeSlice,
-    searchTokens,
-    typeVarMap_
-  ) {
-    return S.chain (function(slice) {
-      var pairs = S.zip (searchTokens) (slice);
-      var delta = slice[0].fst - searchTokens[0].fst;
-      var typeVarMap = typeVarMap_;
+  var sliceMatches = S.curry3 (function(searchTokens, typeVarMap_, slice) {
+    var pairs = S.zip (searchTokens) (slice);
+    var delta = slice[0].fst - searchTokens[0].fst;
+    var typeVarMap = typeVarMap_;
 
-      return S.all (function(pair) {
-        return pair.fst.fst === pair.snd.fst - delta
-               && (/^[a-z]$/.test (pair.fst.snd) ?
-                   /^[a-z]$/.test (pair.snd.snd)
-                   && (pair.fst.snd in typeVarMap ?
-                       typeVarMap[pair.fst.snd] === pair.snd.snd :
-                       S.not (S.elem (pair.snd.snd) (typeVarMap))
-                       && (typeVarMap = S.insert (pair.fst.snd)
-                                                 (pair.snd.snd)
-                                                 (typeVarMap),
-                           true)) :
-                   pair.fst.snd === pair.snd.snd);
-      }) (pairs) ? S.Just (S.Pair (slice) (typeVarMap)) : S.Nothing;
-    }) (maybeSlice);
+    return S.all (function(pair) {
+      return pair.fst.fst === pair.snd.fst - delta
+             && (/^[a-z]$/.test (pair.fst.snd) ?
+                 /^[a-z]$/.test (pair.snd.snd)
+                 && (pair.fst.snd in typeVarMap ?
+                     typeVarMap[pair.fst.snd] === pair.snd.snd :
+                     S.not (S.elem (pair.snd.snd) (typeVarMap))
+                     && (typeVarMap = S.insert (pair.fst.snd)
+                                               (pair.snd.snd)
+                                               (typeVarMap),
+                         true)) :
+                 pair.fst.snd === pair.snd.snd);
+    }) (pairs) ? S.Just (S.Pair (slice) (typeVarMap)) : S.Nothing;
   });
 
   //  highlightSubstring :: (String -> String) -> String -> String -> String
@@ -186,11 +180,11 @@
                       (matches)
            );
          })
-        (sliceMatches (legalSlice (actualTokens)
-                                  (S.Pair (offset)
-                                          (offset + searchTokens.length)))
-                      (searchTokens)
-                      (typeVarMap));
+        (S.chain (sliceMatches (searchTokens)
+                               (typeVarMap))
+                 (legalSlice (actualTokens)
+                             (S.Pair (offset)
+                                     (offset + searchTokens.length))));
     }
 
     var matches =
