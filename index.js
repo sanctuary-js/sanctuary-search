@@ -115,37 +115,41 @@
   //  :: Array (Pair (Pair Integer String) (Pair Integer String))
   //  -> Maybe (StrMap String)
   //  -> Maybe (StrMap String)
-  var sliceMatches = S.curry3 (function(searchTokens, typeVarMap, slice) {
-    var delta = slice[0].fst - searchTokens[0].fst;
-    return S.reduce
-      (S.flip (function(pair) {
-         return S.chain (function(state) {
-           var typeVarMap = state.fst;
-           return (
-             pair.fst.fst === pair.snd.fst - delta ?
-               /^[a-z]$/.test (pair.fst.snd) ?
-                 /^[a-z]$/.test (pair.snd.snd) ?
-                   pair.fst.snd in typeVarMap ?
-                     typeVarMap[pair.fst.snd] === pair.snd.snd ?
-                       S.Just (state) :
-                       S.Nothing :
-                     S.elem (pair.snd.snd) (typeVarMap) ?
-                       S.Nothing :
-                       S.Just (S.mapLeft (S.insert (pair.fst.snd) (pair.snd.snd))
-                                         (state)) :
-                   S.Nothing :
-                 pair.fst.snd === pair.snd.snd ?
-                   S.Just (state) :
-                   S.Nothing :
-               S.Nothing
-           );
-         });
-       }))
-      (S.reject (S.K (delta < 0))
-                (S.Just (S.Pair (typeVarMap)
-                                (S.Pair (searchTokens)
-                                        (slice)))))
-      (S.zip (searchTokens) (slice));
+  var sliceMatches = S.curry4 (function(actualTokens, searchTokens, offset, typeVarMap) {
+    return S.chain (function(slice) {
+      var delta = slice[0].fst - searchTokens[0].fst;
+      return S.reduce
+        (S.flip (function(pair) {
+           return S.chain (function(state) {
+             var typeVarMap = state.fst;
+             return (
+               pair.fst.fst === pair.snd.fst - delta ?
+                 /^[a-z]$/.test (pair.fst.snd) ?
+                   /^[a-z]$/.test (pair.snd.snd) ?
+                     pair.fst.snd in typeVarMap ?
+                       typeVarMap[pair.fst.snd] === pair.snd.snd ?
+                         S.Just (state) :
+                         S.Nothing :
+                       S.elem (pair.snd.snd) (typeVarMap) ?
+                         S.Nothing :
+                         S.Just (S.mapLeft (S.insert (pair.fst.snd) (pair.snd.snd))
+                                           (state)) :
+                     S.Nothing :
+                   pair.fst.snd === pair.snd.snd ?
+                     S.Just (state) :
+                     S.Nothing :
+                 S.Nothing
+             );
+           });
+         }))
+        (S.reject (S.K (delta < 0))
+                  (S.Just (S.Pair (typeVarMap)
+                                  (S.Pair (searchTokens)
+                                          (slice)))))
+        (S.zip (searchTokens) (slice));
+    }) (createSlice (actualTokens)
+                    (S.Pair (offset)
+                            (offset + searchTokens.length)));
   });
 
   //  highlightSubstring :: (String -> String) -> String -> String -> String
@@ -196,11 +200,7 @@
                       (matches)
            );
          })
-        (S.chain (sliceMatches (searchTokens)
-                               (typeVarMap))
-                 (createSlice (actualTokens)
-                              (S.Pair (offset)
-                                      (offset + searchTokens.length))));
+        (sliceMatches (actualTokens) (searchTokens) (offset) (typeVarMap));
     }
 
     var matches =
