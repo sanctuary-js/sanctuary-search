@@ -82,11 +82,11 @@
     return idx >= 0 && idx < xs.length ? S.Just (xs[idx]) : S.Nothing;
   });
 
-  //  legalSlice
+  //  createSlice
   //  :: Array (Pair NonNegativeInteger String)
   //  -> Pair NonNegativeInteger NonNegativeInteger
   //  -> Boolean
-  var legalSlice = S.curry2 (function(tokens, range) {
+  var createSlice = S.curry2 (function(tokens, range) {
     function f(opening, closing) {
       return opening.snd !== '?' &&
              S.maybe (true)
@@ -188,9 +188,9 @@
          })
         (S.chain (sliceMatches (searchTokens)
                                (typeVarMap))
-                 (legalSlice (actualTokens)
-                             (S.Pair (offset)
-                                     (offset + searchTokens.length))));
+                 (createSlice (actualTokens)
+                              (S.Pair (offset)
+                                      (offset + searchTokens.length))));
     }
 
     var matches =
