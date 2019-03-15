@@ -86,7 +86,12 @@
   //  :: Array (Pair (Pair Integer String) (Pair Integer String))
   //  -> Maybe (StrMap String)
   //  -> Maybe (StrMap String)
-  var sliceMatches = S.curry4 (function(actualTokens, searchTokens, offset, typeVarMap) {
+  var sliceMatches = S.curry4 (function(
+    actualTokens,
+    searchTokens,
+    offset,
+    typeVarMap
+  ) {
     var a = at (offset - 1) (actualTokens);
     var b = at (offset) (actualTokens);
     var y = at (offset + searchTokens.length - 1) (actualTokens);
@@ -102,9 +107,9 @@
     if (isQuestionMark (b)) return S.Nothing;
     if (isQuestionMark (z)) return S.Nothing;
 
-    var isAlphabetical = S.maybe (false) (S.compose (S.test (/^[A-Za-z]/)) (S.snd));
-    if (isAlphabetical (a)) return S.Nothing;
-    if (isAlphabetical (z)) return S.Nothing;
+    var isAlpha = S.maybe (false) (S.compose (S.test (/^[A-Za-z]/)) (S.snd));
+    if (isAlpha (a)) return S.Nothing;
+    if (isAlpha (z)) return S.Nothing;
 
     if (S.gt (S.Just (0)) (S.map (S.fst) (S.head (searchTokens)))) {
       var depthContinues = S.on (S.equals) (S.map (S.fst));
@@ -126,7 +131,8 @@
                        S.Nothing :
                      S.elem (pair.snd.snd) (typeVarMap) ?
                        S.Nothing :
-                       S.Just (S.mapLeft (S.insert (pair.fst.snd) (pair.snd.snd))
+                       S.Just (S.mapLeft (S.insert (pair.fst.snd)
+                                                   (pair.snd.snd))
                                          (state)) :
                    S.Nothing :
                  pair.fst.snd === pair.snd.snd ?
