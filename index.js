@@ -26,6 +26,10 @@
     return f (pair.fst) (pair.snd);
   });
 
+  //  combine :: Pair a b -> Pair c d -> Pair (Pair a c) (Pair b d)
+  var combine = S.compose (S_pair (S.bimap))
+                          (S.bimap (S.Pair) (S.Pair));
+
   //  parseSignature :: String -> Maybe (Array (Pair Integer String))
   function parseSignature(signature) {
     var tokens = S.chain (S.splitOn (' '))
@@ -103,13 +107,26 @@
     var delta = slice[0].fst - searchTokens[0].fst;
     if (delta < 0) return S.Nothing;
 
+    //  A question mark should never be separated from the preceding
+    //  token. If the preceding token is a type variable, substitution
+    //  may occur.
+    //
+    //  - '?' gives 'toMaybe :: a? -> Maybe a' (no match)
+    //  - 'x' gives 'toMaybe :: a? -> Maybe @[a]@'
+    //  - 'x?' gives 'toMaybe :: @[a?]@ -> Maybe a'
     var isQuestionMark = S.maybe (false) (S.compose (S.equals ('?')) (S.snd));
     if (isQuestionMark (b)) return S.Nothing;
     if (isQuestionMark (z)) return S.Nothing;
 
-    var isAlpha = S.maybe (false) (S.compose (S.test (/^[A-Za-z]/)) (S.snd));
-    if (isAlpha (a)) return S.Nothing;
-    if (isAlpha (z)) return S.Nothing;
+    //  isAlpha
+    //  :: Maybe (Pair (Pair Integer Integer) (Pair String String)) -> Boolean
+    var isAlpha = S.maybe (false)
+                          (S.compose (S_pair (S.and))
+                                     (S.bimap (S_pair (S.gte))
+                                              (S.compose (S.test (/^[A-Za-z]/))
+                                                         (S.snd))));
+    if (isAlpha (S.lift2 (combine) (b) (a))) return S.Nothing;
+    if (isAlpha (S.lift2 (combine) (y) (z))) return S.Nothing;
 
     if (S.gt (S.Just (0)) (S.map (S.fst) (S.head (searchTokens)))) {
       var depthContinues = S.on (S.equals) (S.map (S.fst));
