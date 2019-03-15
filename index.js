@@ -119,14 +119,15 @@
     return S.reduce
       (S.flip (function(pair) {
          return S.chain (function(state) {
+           var typeVarMap = state.snd;
            return (
              /^[a-z]$/.test (pair.fst.snd) ?
                /^[a-z]$/.test (pair.snd.snd) ?
-                 pair.fst.snd in state.snd ?
-                   state.snd[pair.fst.snd] === pair.snd.snd ?
+                 pair.fst.snd in typeVarMap ?
+                   typeVarMap[pair.fst.snd] === pair.snd.snd ?
                      S.Just (state) :
                      S.Nothing :
-                   S.elem (pair.snd.snd) (state.snd) ?
+                   S.elem (pair.snd.snd) (typeVarMap) ?
                      S.Nothing :
                      S.Just (S.map (S.insert (pair.fst.snd) (pair.snd.snd))
                                    (state)) :
