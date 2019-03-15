@@ -141,7 +141,7 @@
            );
          });
        }))
-      (S.Just (S.Pair (slice) (typeVarMap)))
+      (S.reject (S.K (delta < 0)) (S.Just (S.Pair (slice) (typeVarMap))))
       (S.zip (searchTokens) (slice));
   });
 
