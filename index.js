@@ -113,24 +113,30 @@
   //  :: Array (Pair (Pair Integer String) (Pair Integer String))
   //  -> Maybe (StrMap String)
   //  -> Maybe (StrMap String)
-  var sliceMatches = S.curry3 (function(searchTokens, typeVarMap_, slice) {
-    var pairs = S.zip (searchTokens) (slice);
-    var delta = slice[0].fst - searchTokens[0].fst;
-    var typeVarMap = typeVarMap_;
-
-    return S.all (function(pair) {
-      return pair.fst.fst === pair.snd.fst - delta
-             && (/^[a-z]$/.test (pair.fst.snd) ?
-                 /^[a-z]$/.test (pair.snd.snd)
-                 && (pair.fst.snd in typeVarMap ?
-                     typeVarMap[pair.fst.snd] === pair.snd.snd :
-                     S.not (S.elem (pair.snd.snd) (typeVarMap))
-                     && (typeVarMap = S.insert (pair.fst.snd)
-                                               (pair.snd.snd)
-                                               (typeVarMap),
-                         true)) :
-                 pair.fst.snd === pair.snd.snd);
-    }) (pairs) ? S.Just (S.Pair (slice) (typeVarMap)) : S.Nothing;
+  var sliceMatches = S.curry3 (function(searchTokens, typeVarMap, slice) {
+    return S.reduce
+      (S.flip (function(pair) {
+         return S.chain (function(state) {
+           return (
+             /^[a-z]$/.test (pair.fst.snd) ?
+               /^[a-z]$/.test (pair.snd.snd) ?
+                 pair.fst.snd in state.snd ?
+                   state.snd[pair.fst.snd] === pair.snd.snd ?
+                     S.Just (state) :
+                     S.Nothing :
+                   S.elem (pair.snd.snd) (state.snd) ?
+                     S.Nothing :
+                     S.Just (S.map (S.insert (pair.fst.snd) (pair.snd.snd))
+                                   (state)) :
+                 S.Nothing :
+             pair.fst.snd === pair.snd.snd ?
+               S.Just (state) :
+               S.Nothing
+           );
+         });
+       }))
+      (S.Just (S.Pair (slice) (typeVarMap)))
+      (S.zip (searchTokens) (slice));
   });
 
   //  highlightSubstring :: (String -> String) -> String -> String -> String
