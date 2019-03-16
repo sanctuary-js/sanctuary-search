@@ -103,6 +103,7 @@
 
     var slice = actualTokens.slice (offset, offset + searchTokens.length);
     if (slice.length < searchTokens.length) return S.Nothing;
+    if (slice.length === 0) return S.Nothing;
 
     var delta = slice[0].fst - searchTokens[0].fst;
     if (delta < 0) return S.Nothing;
@@ -165,17 +166,12 @@
 
   //  highlightSubstring :: (String -> String) -> String -> String -> String
   var highlightSubstring = S.curry3 (function(em, s, t) {
-    return S.pipe ([
-      S.bimap (S.toLower) (S.toLower),
-      S.Just,
-      S.reject (S_pair (S.equals)),
-      S.map (function(pair) { return pair.fst.indexOf (pair.snd); }),
-      S.filter (S.gte (0)),
-      S.map (function(i) {
-        var j = i + t.length;
-        return s.slice (0, i) + em (s.slice (i, j)) + s.slice (j);
-      })
-    ]) (S.Pair (s) (t));
+    return S.map (function(i) {
+                    var j = i + t.length;
+                    return s.slice (0, i) + em (s.slice (i, j)) + s.slice (j);
+                  })
+                 (S.filter (S.gte (0))
+                           (S.Just ((S.toLower (s)).indexOf (S.toLower (t)))));
   });
 
   //  matchTokens
