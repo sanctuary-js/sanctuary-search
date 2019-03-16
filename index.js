@@ -215,9 +215,9 @@
   //  -> Array (Pair Integer String)
   //  -> Either String String
   var matchTokens = S.curry3 (function(em, searchTokens, actualTokens) {
-    function loop(typeVarMap, previouslyMatched, offset, matches) {
+    function loop(typeVarMap, offset, matches) {
       return offset === actualTokens.length ?
-             (previouslyMatched ? S.Right : S.Left) (matches) :
+             matches :
              S.maybe_ (unmatched)
                       (matched)
                       (sliceMatches (actualTokens)
@@ -226,9 +226,10 @@
                                     (typeVarMap));
       function unmatched() {
         return loop (typeVarMap,
-                     previouslyMatched,
                      offset + 1,
-                     S.append (actualTokens[offset]) (matches));
+                     S.bimap (S.append (actualTokens[offset]))
+                             (S.append (actualTokens[offset]))
+                             (matches));
       }
       function matched(pair) {
         var searchTokens = pair.snd.fst;
@@ -238,9 +239,9 @@
                            (em (format (S.map (S.mapLeft (S.sub (depth)))
                                               (slice))));
         return loop (pair.fst,
-                     true,
                      offset + searchTokens.length,
-                     S.append (match) (matches));
+                     S.Right (S.append (match)
+                                       (S.either (S.I) (S.I) (matches))));
       }
     }
 
@@ -257,9 +258,8 @@
     return S.bimap (format)
                    (format)
                    (loop (Object.create (null),
-                          matches.length > 0,
                           matches.length,
-                          matches));
+                          S.tagBy (S.complement (S.equals ([]))) (matches)));
   });
 
   //  search :: (String -> String) -> String -> String -> Either String String
