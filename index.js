@@ -210,34 +210,33 @@
   //  -> Array (Pair Integer String)
   //  -> Either String String
   var matchTokens = S.curry3 (function(em, searchTokens, actualTokens) {
-    function loop(typeVarMap, matched, offset, matches) {
-      if (offset === actualTokens.length) return S.Pair (matched) (matches);
-
-      return S.maybe_
-        (function() {
-           return loop (
-             typeVarMap,
-             matched,
-             offset + 1,
-             S.append (actualTokens[offset])
-                      (matches)
-           );
-         })
-        (function(pair) {
-           var searchTokens = pair.snd.fst;
-           var slice = pair.snd.snd;
-           var depth = slice[0].fst - searchTokens[0].fst;
-           return loop (
-             pair.fst,
-             true,
-             offset + searchTokens.length,
-             S.append (S.Pair (depth)
-                              (em (format (S.map (S.mapLeft (S.sub (depth)))
-                                                 (slice)))))
-                      (matches)
-           );
-         })
-        (sliceMatches (actualTokens) (searchTokens) (offset) (typeVarMap));
+    function loop(typeVarMap, previouslyMatched, offset, matches) {
+      return offset === actualTokens.length ?
+             S.Pair (previouslyMatched) (matches) :
+             S.maybe_ (unmatched)
+                      (matched)
+                      (sliceMatches (actualTokens)
+                                    (searchTokens)
+                                    (offset)
+                                    (typeVarMap));
+      function unmatched() {
+        return loop (typeVarMap,
+                     previouslyMatched,
+                     offset + 1,
+                     S.append (actualTokens[offset]) (matches));
+      }
+      function matched(pair) {
+        var searchTokens = pair.snd.fst;
+        var slice = pair.snd.snd;
+        var depth = slice[0].fst - searchTokens[0].fst;
+        var match = S.Pair (depth)
+                           (em (format (S.map (S.mapLeft (S.sub (depth)))
+                                              (slice))));
+        return loop (pair.fst,
+                     true,
+                     offset + searchTokens.length,
+                     S.append (match) (matches));
+      }
     }
 
     var matches =
