@@ -30,10 +30,18 @@
   var combine = S.compose (S_pair (S.bimap))
                           (S.bimap (S.Pair) (S.Pair));
 
+  //  syntax :: RegExp
+  var syntax = S.pipe ([
+    S.map (S.regexEscape),
+    S.joinWith ('|'),
+    S.concat ('('),
+    S.flip (S.concat) (')'),
+    S.regex ('')
+  ]) (['::', '=>', '~>', '->', '()', '{}', '(', ')', '{', '}', ',', '?']);
+
   //  parseSignature :: String -> Maybe (Array (Pair Integer String))
   function parseSignature(signature) {
-    var tokens = S.chain (S.splitOn (' '))
-                         (signature.split (/([(][)]|[{][}]|[({,?})])/));
+    var tokens = S.chain (S.splitOn (' ')) (signature.split (syntax));
     var context = [];
     var depth = 0;
     var result = [];

@@ -113,6 +113,17 @@ suite ('search', () => {
     });
   });
 
+  test ('inconsistent spacing is permissible', () => {
+    eq (match (' trim  ::  String  ->  String ') ('trim::String->String'))
+       (S.Right ('@[trim :: String -> String]@'));
+    eq (match ('trim::String->String') (' trim  ::  String  ->  String '))
+       (S.Right ('@[trim :: String -> String]@'));
+    eq (match (' trim  ::  String  ->  String ') ('String->String'))
+       (S.Right ('trim :: @[String -> String]@'));
+    eq (match ('trim::String->String') (' String '))
+       (S.Right ('trim :: @[String]@ -> @[String]@'));
+  });
+
   test ('type variables are matched intelligently', () => {
     eq (match ('I :: a -> a') ('a')) (S.Right ('I :: @[a]@ -> @[a]@'));
     eq (match ('I :: a -> a') ('x')) (S.Right ('I :: @[a]@ -> @[a]@'));
