@@ -116,10 +116,13 @@ suite ('search', () => {
   test ('inconsistent spacing is permissible', () => {
     eq (match (' trim  ::  String  ->  String ') ('trim::String->String'))
        (S.Right ('@[trim :: String -> String]@'));
+
     eq (match ('trim::String->String') (' trim  ::  String  ->  String '))
        (S.Right ('@[trim :: String -> String]@'));
+
     eq (match (' trim  ::  String  ->  String ') ('String->String'))
        (S.Right ('trim :: @[String -> String]@'));
+
     eq (match ('trim::String->String') (' String '))
        (S.Right ('trim :: @[String]@ -> @[String]@'));
   });
