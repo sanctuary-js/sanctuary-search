@@ -113,21 +113,20 @@ suite ('search', () => {
     });
   });
 
+  test ('type variables are matched intelligently', () => {
+    eq (match ('I :: a -> a') ('a')) (S.Right ('I :: @[a]@ -> @[a]@'));
+    eq (match ('I :: a -> a') ('x')) (S.Right ('I :: @[a]@ -> @[a]@'));
+    eq (match ('I :: a -> a') ('a -> a')) (S.Right ('I :: @[a -> a]@'));
+    eq (match ('I :: a -> a') ('x -> x')) (S.Right ('I :: @[a -> a]@'));
+    eq (match ('I :: a -> a') ('x -> y')) (S.Left ('I :: a -> a'));
+    eq (match ('K :: a -> b -> a') ('x')) (S.Right ('K :: @[a]@ -> b -> @[a]@'));
+    eq (match ('K :: a -> b -> a') ('x -> y')) (S.Right ('K :: @[a -> b]@ -> a'));
+    eq (match ('K :: a -> b -> a') ('x -> y -> x')) (S.Right ('K :: @[a -> b -> a]@'));
+    eq (match ('K :: a -> b -> a') ('x -> y -> y')) (S.Left ('K :: a -> b -> a'));
+    eq (match ('K :: a -> b -> a') ('x -> y -> z')) (S.Left ('K :: a -> b -> a'));
+  });
+
   test ('TK', () => {
-    eq (match ('I :: a -> a') ('a'))
-       (S.Right ('I :: @[a]@ -> @[a]@'));
-    eq (match ('K :: a -> b -> a') ('x'))
-       (S.Right ('K :: @[a]@ -> b -> @[a]@'));
-    eq (match ('K :: a -> b -> a') ('a -> b'))
-       (S.Right ('K :: @[a -> b]@ -> a'));
-    eq (match ('K :: a -> b -> a') ('x -> y'))
-       (S.Right ('K :: @[a -> b]@ -> a'));
-    eq (match ('K :: a -> b -> a') ('x -> y -> x'))
-       (S.Right ('K :: @[a -> b -> a]@'));
-    eq (match ('K :: a -> b -> a') ('x -> y -> y'))
-       (S.Left ('K :: a -> b -> a'));
-    eq (match ('K :: a -> b -> a') ('x -> y -> z'))
-       (S.Left ('K :: a -> b -> a'));
     eq (match ('map :: Functor f => (a -> b) -> f a -> f b') ('a -> b'))
        (S.Right ('map :: Functor f => (@[a -> b]@) -> f a -> f b'));
     eq (match ('chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b') ('Either a b'))
