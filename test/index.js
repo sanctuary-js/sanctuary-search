@@ -157,13 +157,28 @@ suite ('search', () => {
 
     eq (match (lift2) ('((x -> y -> z))'))
        (S.Left (lift2));
+
+    var chainRec = 'chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b';
+
+    eq (match (chainRec) ('Either a b'))
+       (S.Right ('chainRec :: ChainRec m => TypeRep m -> (a -> m (@[Either a b]@)) -> a -> m b'));
+
+    eq (match (chainRec) ('(Either a b)'))
+       (S.Right ('chainRec :: ChainRec m => TypeRep m -> (a -> m @[(Either a b)]@) -> a -> m b'));
+
+    eq (match (chainRec) ('m (Either a b)'))
+       (S.Right ('chainRec :: ChainRec m => TypeRep m -> (a -> @[m (Either a b)]@) -> a -> m b'));
+
+    eq (match (chainRec) ('a -> m (Either a b)'))
+       (S.Right ('chainRec :: ChainRec m => TypeRep m -> (@[a -> m (Either a b)]@) -> a -> m b'));
+
+    eq (match (chainRec) ('(a -> m (Either a b))'))
+       (S.Right ('chainRec :: ChainRec m => TypeRep m -> @[(a -> m (Either a b))]@ -> a -> m b'));
   });
 
   test ('TK', () => {
     eq (match ('map :: Functor f => (a -> b) -> f a -> f b') ('a -> b'))
        (S.Right ('map :: Functor f => (@[a -> b]@) -> f a -> f b'));
-    eq (match ('chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b') ('Either a b'))
-       (S.Right ('chainRec :: ChainRec m => TypeRep m -> (a -> m (@[Either a b]@)) -> a -> m b'));
     eq (match ('bimap :: Bifunctor f => (a -> b) -> (c -> d) -> f a c -> f b d') ('a c -> f b d'))
        (S.Left ('bimap :: Bifunctor f => (a -> b) -> (c -> d) -> f a c -> f b d'));
     eq (match ('match :: NonGlobalRegExp -> String -> Maybe { match :: String, groups :: Array (Maybe String) }') ('match'))
