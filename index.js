@@ -227,9 +227,9 @@
       function unmatched() {
         return loop (typeVarMap,
                      offset + 1,
-                     S.bimap (S.append (actualTokens[offset]))
-                             (S.append (actualTokens[offset]))
-                             (matches));
+                     S.join (S.bimap)
+                            (S.append (actualTokens[offset]))
+                            (matches));
       }
       function matched(pair) {
         var searchTokens = pair.snd.fst;
@@ -241,7 +241,7 @@
         return loop (pair.fst,
                      offset + searchTokens.length,
                      S.Right (S.append (match)
-                                       (S.either (S.I) (S.I) (matches))));
+                                       (S.join (S.either) (S.I) (matches))));
       }
     }
 
@@ -255,11 +255,11 @@
                                                            (S.size))
                                                 (S.Just (searchTokens))))));
 
-    return S.bimap (format)
-                   (format)
-                   (loop (Object.create (null),
-                          matches.length,
-                          S.tagBy (S.complement (S.equals ([]))) (matches)));
+    return S.join (S.bimap)
+                  (format)
+                  (loop (Object.create (null),
+                         matches.length,
+                         S.tagBy (S.complement (S.equals ([]))) (matches)));
   });
 
   //  search :: (String -> String) -> String -> String -> Either String String
