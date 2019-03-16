@@ -187,7 +187,7 @@
   //  -> Array (Pair NonNegativeInteger String)
   //  -> Array (Pair NonNegativeInteger String)
   //  -> Either String String
-  var matchTokens = S.curry3 (function(em, actualTokens, searchTokens) {
+  var matchTokens = S.curry3 (function(em, searchTokens, actualTokens) {
     function loop(typeVarMap, matched, offset, matches) {
       if (offset === actualTokens.length) return S.Pair (matched) (matches);
 
@@ -242,11 +242,11 @@
   //  -> String
   //  -> String
   //  -> Either String String
-  var matchStrings = S.curry3 (function(em, signatureString, searchString) {
+  var matchStrings = S.curry3 (function(em, searchString, signatureString) {
     return S.fromMaybe (S.Left (signatureString))
                        (S.lift2 (matchTokens (em))
-                                (parseSignature (signatureString))
-                                (parseSignature (searchString)));
+                                (parseSignature (searchString))
+                                (parseSignature (signatureString)));
   });
 
   return matchStrings;

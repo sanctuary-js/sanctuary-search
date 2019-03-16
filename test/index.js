@@ -37,7 +37,7 @@ const head = S.compose (S.maybeToEither ('Empty array')) (S.head);
 const name = S.compose (head) (S.splitOn (' :: '));
 
 //    match :: String -> String -> Either String String
-const match = search (s => '@[' + s + ']@');
+const match = S.flip (search (s => '@[' + s + ']@'));
 
 
 suite ('search', () => {
