@@ -26,34 +26,50 @@
     return f (pair.fst) (pair.snd);
   });
 
+  var SpaceBefore = 1 << 0;
+  var SliceBefore = 1 << 1;
+  var SliceAfter  = 1 << 2;
+
   //  tokens :: StrMap Boolean
   var tokens = {
     /* eslint-disable key-spacing */
-    '::': {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
-    '=>': {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
-    '~>': {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
-    '->': {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
-    '()': {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
-    '{}': {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
-    '(':  {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
-    ')':  {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
-    '{':  {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
-    '}':  {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
-    ',':  {spaceBefore: false, sliceBefore: true,  sliceAfter: true},
-    '?':  {spaceBefore: false, sliceBefore: false, sliceAfter: true},
+    '::': SpaceBefore | SliceBefore | SliceAfter,
+    '=>': SpaceBefore | SliceBefore | SliceAfter,
+    '~>': SpaceBefore | SliceBefore | SliceAfter,
+    '->': SpaceBefore | SliceBefore | SliceAfter,
+    '()': SpaceBefore | SliceBefore | SliceAfter,
+    '{}': SpaceBefore | SliceBefore | SliceAfter,
+    '(':  SpaceBefore | SliceBefore | SliceAfter,
+    ')':  SpaceBefore | SliceBefore | SliceAfter,
+    '{':  SpaceBefore | SliceBefore | SliceAfter,
+    '}':  SpaceBefore | SliceBefore | SliceAfter,
+    ',':                SliceBefore | SliceAfter,
+    '?':                              SliceAfter
     /* eslint-enable key-spacing */
   };
 
-  //  tokenInfo
-  //  :: Pair Integer String
-  //  -> Maybe { spaceBefore :: Boolean
-  //           , sliceBefore :: Boolean
-  //           , sliceAfter :: Boolean }
+  //  tokenInfo :: Pair Integer String -> Maybe Info
   function tokenInfo(pair) {
     return Object.prototype.hasOwnProperty.call (tokens, pair.snd) ?
            S.Just (tokens[pair.snd]) :
            S.Nothing;
   }
+
+  //  tokenAttr :: Info -> Info -> Boolean
+  function tokenAttr(attr) {
+    return function(info) {
+      return (info & attr) > 0;
+    };
+  }
+
+  //  spaceBefore :: Info -> Boolean
+  var spaceBefore = tokenAttr (SpaceBefore);
+
+  //  sliceBefore :: Info -> Boolean
+  var sliceBefore = tokenAttr (SliceBefore);
+
+  //  sliceAfter :: Info -> Boolean
+  var sliceAfter = tokenAttr (SliceAfter);
 
   //  syntax :: RegExp
   var syntax = S.pipe ([
@@ -108,7 +124,7 @@
       var pair = pairs[idx];
       var isToken = Object.prototype.hasOwnProperty.call (tokens, pair.snd);
       s += repeat (')') (depth - pair.fst) +
-           (isToken && !tokens[pair.snd].spaceBefore ? '' : s && ' ') +
+           (isToken && !(spaceBefore (tokens[pair.snd])) ? '' : s && ' ') +
            repeat ('(') (pair.fst - depth) +
            pair.snd;
       depth = pair.fst;
@@ -151,10 +167,10 @@
           return (
             delta < 0 ||
 
-            S.maybe (false) (S.complement (S.prop ('sliceAfter'))) (ai) ||
-            S.maybe (false) (S.complement (S.prop ('sliceBefore'))) (bi) ||
-            S.maybe (false) (S.complement (S.prop ('sliceAfter'))) (yi) ||
-            S.maybe (false) (S.complement (S.prop ('sliceBefore'))) (zi) ||
+            S.maybe (false) (S.complement (sliceAfter)) (ai) ||
+            S.maybe (false) (S.complement (sliceBefore)) (bi) ||
+            S.maybe (false) (S.complement (sliceAfter)) (yi) ||
+            S.maybe (false) (S.complement (sliceBefore)) (zi) ||
 
             ai.isNothing && S.maybe (false) (S.on (S.gte) (S.fst) (b)) (a_) ||
             zi.isNothing && S.maybe (false) (S.on (S.gte) (S.fst) (y)) (z_) ||
