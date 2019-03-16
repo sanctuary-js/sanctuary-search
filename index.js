@@ -132,11 +132,6 @@
     return s + repeat (')') (depth);
   }
 
-  //  at :: Integer -> Array a -> Maybe a
-  var at = S.curry2 (function(idx, xs) {
-    return idx >= 0 && idx < xs.length ? S.Just (xs[idx]) : S.Nothing;
-  });
-
   //  sliceMatches
   //  :: Array (Pair Integer String)
   //  -> Array (Pair Integer String)
@@ -151,13 +146,16 @@
     offset,
     typeVarMap
   ) {
+    var i = offset;
+    var j = offset + searchTokens.length;
+
     return S.chain (function(slice) {
       return S.chain (function(pair) {
         return S.chain (function(depth) {
           var b = pair.fst;
           var y = pair.snd;
-          var a_ = at (offset - 1) (actualTokens);
-          var z_ = at (offset + searchTokens.length) (actualTokens);
+          var a_ = S.chain (S.last) (S.take (i) (actualTokens));
+          var z_ = S.chain (S.head) (S.drop (j) (actualTokens));
           var bi = tokenInfo (b);
           var yi = tokenInfo (y);
           var ai = S.chain (tokenInfo) (a_);
@@ -211,7 +209,7 @@
           }
         }) (S.map (S.fst) (S.head (searchTokens)));
       }) (S.lift2 (S.Pair) (S.head (slice)) (S.last (slice)));
-    }) (S.slice (offset) (offset + searchTokens.length) (actualTokens));
+    }) (S.slice (i) (j) (actualTokens));
   });
 
   //  highlightSubstring :: (String -> String) -> String -> String -> String
