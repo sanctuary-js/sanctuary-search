@@ -176,6 +176,28 @@ suite ('search', () => {
        (S.Right ('chainRec :: ChainRec m => TypeRep m -> @[(a -> m (Either a b))]@ -> a -> m b'));
   });
 
+  test ('type variables may be followed by "?"', () => {
+    var toEither = 'toEither :: a -> b? -> Either a b';
+
+    eq (match (toEither) ('x'))
+       (S.Right ('toEither :: @[a]@ -> b? -> Either a b'));
+
+    eq (match (toEither) ('x?'))
+       (S.Right ('toEither :: a -> @[b?]@ -> Either a b'));
+
+    eq (match (toEither) ('x -> y'))
+       (S.Left (toEither));
+
+    eq (match (toEither) ('x -> y?'))
+       (S.Right ('toEither :: @[a -> b?]@ -> Either a b'));
+
+    eq (match (toEither) ('x -> y? -> Either x y'))
+       (S.Right ('toEither :: @[a -> b? -> Either a b]@'));
+
+    eq (match (toEither) ('x -> y? -> Either x z'))
+       (S.Left (toEither));
+  });
+
   test ('TK', () => {
     eq (match ('map :: Functor f => (a -> b) -> f a -> f b') ('a -> b'))
        (S.Right ('map :: Functor f => (@[a -> b]@) -> f a -> f b'));
@@ -189,12 +211,6 @@ suite ('search', () => {
        (S.Right ('match@[All]@ :: GlobalRegExp -> String -> Array { match :: String, groups :: Array (Maybe String) }'));
     eq (match ('chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b') ('a -> m'))
        (S.Left ('chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b'));
-    eq (match ('toMaybe :: a? -> Maybe a') ('x'))
-       (S.Left ('toMaybe :: a? -> Maybe a'));
-    eq (match ('toMaybe :: a? -> Maybe a') ('x?'))
-       (S.Right ('toMaybe :: @[a?]@ -> Maybe a'));
-    eq (match ('toMaybe :: a? -> Maybe a') ('x? -> Maybe x'))
-       (S.Right ('toMaybe :: @[a? -> Maybe a]@'));
     eq (match ('curry3 :: ((a, b, c) -> d) -> a -> b -> c -> d') ('x -> y'))
        (S.Right ('curry3 :: ((a, b, c) -> d) -> @[a -> b]@ -> c -> d'));
     eq (match ('K :: a -> b -> a') ('(a -> b)'))
