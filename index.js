@@ -19,13 +19,6 @@
 
   'use strict';
 
-  //  S_pair :: (a -> b -> c) -> Pair a b -> c
-  //
-  //  To be added in sanctuary-js/sanctuary#609.
-  var S_pair = S.curry2 (function(f, pair) {
-    return f (pair.fst) (pair.snd);
-  });
-
   var SpaceBefore = 1 << 0;
   var SliceBefore = 1 << 1;
   var SliceAfter  = 1 << 2;
@@ -230,7 +223,7 @@
   var matchTokens = S.curry3 (function(em, searchTokens, actualTokens) {
     function loop(typeVarMap, previouslyMatched, offset, matches) {
       return offset === actualTokens.length ?
-             S.Pair (previouslyMatched) (matches) :
+             (previouslyMatched ? S.Right : S.Left) (matches) :
              S.maybe_ (unmatched)
                       (matched)
                       (sliceMatches (actualTokens)
@@ -267,13 +260,12 @@
                                                            (S.size))
                                                 (S.Just (searchTokens))))));
 
-    return S_pair (S.tagBy)
-                  (S.bimap (S.K)
-                           (format)
-                           (loop (Object.create (null),
-                                  matches.length > 0,
-                                  matches.length,
-                                  matches)));
+    return S.bimap (format)
+                   (format)
+                   (loop (Object.create (null),
+                          matches.length > 0,
+                          matches.length,
+                          matches));
   });
 
   //  search :: (String -> String) -> String -> String -> Either String String
