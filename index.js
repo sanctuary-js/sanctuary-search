@@ -113,9 +113,13 @@
                           (S.bimap (S.Pair) (S.Pair));
 
   //  sliceMatches
-  //  :: Array (Pair (Pair Integer String) (Pair Integer String))
-  //  -> Maybe (StrMap String)
-  //  -> Maybe (StrMap String)
+  //  :: Array (Pair Integer String)
+  //  -> Array (Pair Integer String)
+  //  -> Integer
+  //  -> StrMap String
+  //  -> Maybe (Pair (StrMap String)
+  //                 (Pair (Array (Pair Integer String))
+  //                       (Array (Pair Integer String))))
   var sliceMatches = S.curry4 (function(
     actualTokens,
     searchTokens,
@@ -202,8 +206,8 @@
 
   //  matchTokens
   //  :: (String -> String)
-  //  -> Array (Pair NonNegativeInteger String)
-  //  -> Array (Pair NonNegativeInteger String)
+  //  -> Array (Pair Integer String)
+  //  -> Array (Pair Integer String)
   //  -> Either String String
   var matchTokens = S.curry3 (function(em, searchTokens, actualTokens) {
     function loop(typeVarMap, matched, offset, matches) {
@@ -255,18 +259,14 @@
                                   matches)));
   });
 
-  //  matchStrings
-  //  :: (String -> String)
-  //  -> String
-  //  -> String
-  //  -> Either String String
-  var matchStrings = S.curry3 (function(em, searchString, signatureString) {
+  //  search :: (String -> String) -> String -> String -> Either String String
+  var search = S.curry3 (function(em, searchString, signatureString) {
     return S.fromMaybe (S.Left (signatureString))
                        (S.lift2 (matchTokens (em))
                                 (parseSignature (searchString))
                                 (parseSignature (signatureString)));
   });
 
-  return matchStrings;
+  return search;
 
 }));
