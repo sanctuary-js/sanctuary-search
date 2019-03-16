@@ -26,18 +26,31 @@
     return f (pair.fst) (pair.snd);
   });
 
-  //  combine :: Pair a b -> Pair c d -> Pair (Pair a c) (Pair b d)
-  var combine = S.compose (S_pair (S.bimap))
-                          (S.bimap (S.Pair) (S.Pair));
+  //  tokens :: StrMap Boolean
+  var tokens = {
+    '::': true,
+    '=>': true,
+    '~>': true,
+    '->': true,
+    '()': true,
+    '{}': true,
+    '(': true,
+    ')': true,
+    '{': true,
+    '}': true,
+    ',': false,
+    '?': false
+  };
 
   //  syntax :: RegExp
   var syntax = S.pipe ([
+    Object.keys,
     S.map (S.regexEscape),
     S.joinWith ('|'),
     S.concat ('('),
     S.flip (S.concat) (')'),
     S.regex ('')
-  ]) (['::', '=>', '~>', '->', '()', '{}', '(', ')', '{', '}', ',', '?']);
+  ]) (tokens);
 
   //  parseSignature :: String -> Maybe (Array (Pair Integer String))
   function parseSignature(signature) {
@@ -80,8 +93,9 @@
     var depth = 0;
     for (var idx = 0; idx < pairs.length; idx += 1) {
       var pair = pairs[idx];
+      var isToken = Object.prototype.hasOwnProperty.call (tokens, pair.snd);
       s += repeat (')') (depth - pair.fst) +
-           (s === '' || pair.snd === ',' || pair.snd === '?' ? '' : ' ') +
+           (isToken && !tokens[pair.snd] ? '' : s && ' ') +
            repeat ('(') (pair.fst - depth) +
            pair.snd;
       depth = pair.fst;
@@ -93,6 +107,10 @@
   var at = S.curry2 (function(idx, xs) {
     return idx >= 0 && idx < xs.length ? S.Just (xs[idx]) : S.Nothing;
   });
+
+  //  combine :: Pair a b -> Pair c d -> Pair (Pair a c) (Pair b d)
+  var combine = S.compose (S_pair (S.bimap))
+                          (S.bimap (S.Pair) (S.Pair));
 
   //  sliceMatches
   //  :: Array (Pair (Pair Integer String) (Pair Integer String))
