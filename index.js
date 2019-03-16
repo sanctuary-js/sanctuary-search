@@ -28,19 +28,32 @@
 
   //  tokens :: StrMap Boolean
   var tokens = {
-    '::': true,
-    '=>': true,
-    '~>': true,
-    '->': true,
-    '()': true,
-    '{}': true,
-    '(': true,
-    ')': true,
-    '{': true,
-    '}': true,
-    ',': false,
-    '?': false
+    /* eslint-disable key-spacing */
+    '::': {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
+    '=>': {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
+    '~>': {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
+    '->': {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
+    '()': {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
+    '{}': {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
+    '(':  {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
+    ')':  {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
+    '{':  {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
+    '}':  {spaceBefore: true,  sliceBefore: true,  sliceAfter: true},
+    ',':  {spaceBefore: false, sliceBefore: true,  sliceAfter: true},
+    '?':  {spaceBefore: false, sliceBefore: false, sliceAfter: true},
+    /* eslint-enable key-spacing */
   };
+
+  //  tokenInfo
+  //  :: Pair Integer String
+  //  -> Maybe { spaceBefore :: Boolean
+  //           , sliceBefore :: Boolean
+  //           , sliceAfter :: Boolean }
+  function tokenInfo(pair) {
+    return Object.prototype.hasOwnProperty.call (tokens, pair.snd) ?
+           S.Just (tokens[pair.snd]) :
+           S.Nothing;
+  }
 
   //  syntax :: RegExp
   var syntax = S.pipe ([
@@ -95,7 +108,7 @@
       var pair = pairs[idx];
       var isToken = Object.prototype.hasOwnProperty.call (tokens, pair.snd);
       s += repeat (')') (depth - pair.fst) +
-           (isToken && !tokens[pair.snd] ? '' : s && ' ') +
+           (isToken && !tokens[pair.snd].spaceBefore ? '' : s && ' ') +
            repeat ('(') (pair.fst - depth) +
            pair.snd;
       depth = pair.fst;
@@ -107,10 +120,6 @@
   var at = S.curry2 (function(idx, xs) {
     return idx >= 0 && idx < xs.length ? S.Just (xs[idx]) : S.Nothing;
   });
-
-  //  combine :: Pair a b -> Pair c d -> Pair (Pair a c) (Pair b d)
-  var combine = S.compose (S_pair (S.bimap))
-                          (S.bimap (S.Pair) (S.Pair));
 
   //  sliceMatches
   //  :: Array (Pair Integer String)
@@ -126,72 +135,67 @@
     offset,
     typeVarMap
   ) {
-    var a = at (offset - 1) (actualTokens);
-    var b = at (offset) (actualTokens);
-    var y = at (offset + searchTokens.length - 1) (actualTokens);
-    var z = at (offset + searchTokens.length) (actualTokens);
+    return S.chain (function(slice) {
+      return S.chain (function(pair) {
+        return S.chain (function(depth) {
+          var b = pair.fst;
+          var y = pair.snd;
+          var a_ = at (offset - 1) (actualTokens);
+          var z_ = at (offset + searchTokens.length) (actualTokens);
+          var bi = tokenInfo (b);
+          var yi = tokenInfo (y);
+          var ai = S.chain (tokenInfo) (a_);
+          var zi = S.chain (tokenInfo) (z_);
+          var delta = b.fst - depth;
 
-    var slice = actualTokens.slice (offset, offset + searchTokens.length);
-    if (slice.length < searchTokens.length) return S.Nothing;
-    if (slice.length === 0) return S.Nothing;
+          return (
+            delta < 0 ||
 
-    var delta = slice[0].fst - searchTokens[0].fst;
-    if (delta < 0) return S.Nothing;
+            S.maybe (false) (S.complement (S.prop ('sliceAfter'))) (ai) ||
+            S.maybe (false) (S.complement (S.prop ('sliceBefore'))) (bi) ||
+            S.maybe (false) (S.complement (S.prop ('sliceAfter'))) (yi) ||
+            S.maybe (false) (S.complement (S.prop ('sliceBefore'))) (zi) ||
 
-    //  A question mark should never be separated from the preceding
-    //  token. If the preceding token is a type variable, substitution
-    //  may occur.
-    //
-    //  - '?' gives 'toMaybe :: a? -> Maybe a' (no match)
-    //  - 'x' gives 'toMaybe :: a? -> Maybe @[a]@'
-    //  - 'x?' gives 'toMaybe :: @[a?]@ -> Maybe a'
-    var isQuestionMark = S.maybe (false) (S.compose (S.equals ('?')) (S.snd));
-    if (isQuestionMark (b)) return S.Nothing;
-    if (isQuestionMark (z)) return S.Nothing;
+            ai.isNothing && S.maybe (false) (S.on (S.gte) (S.fst) (b)) (a_) ||
+            zi.isNothing && S.maybe (false) (S.on (S.gte) (S.fst) (y)) (z_) ||
 
-    //  isAlpha
-    //  :: Maybe (Pair (Pair Integer Integer) (Pair String String)) -> Boolean
-    var isAlpha = S.maybe (false)
-                          (S.compose (S_pair (S.and))
-                                     (S.bimap (S_pair (S.gte))
-                                              (S.compose (S.test (/^[A-Za-z]/))
-                                                         (S.snd))));
-    if (isAlpha (S.lift2 (combine) (b) (a))) return S.Nothing;
-    if (isAlpha (S.lift2 (combine) (y) (z))) return S.Nothing;
+            depth > 0 && S.maybe (false) (S.on (S.equals) (S.fst) (b)) (a_) ||
+            depth > 0 && S.maybe (false) (S.on (S.equals) (S.fst) (y)) (z_)
+          ) ?
+            S.Nothing :
+            S.reduce (S.flip (reducer))
+                     (S.Just (S.Pair (typeVarMap)
+                                     (S.Pair (searchTokens)
+                                             (slice))))
+                     (S.zip (searchTokens) (slice));
 
-    if (S.gt (S.Just (0)) (S.map (S.fst) (S.head (searchTokens)))) {
-      var depthContinues = S.on (S.equals) (S.map (S.fst));
-      if (depthContinues (b) (a)) return S.Nothing;
-      if (depthContinues (y) (z)) return S.Nothing;
-    }
-
-    return S.reduce
-      (S.flip (function(pair) {
-         return S.chain (function(state) {
-           var typeVarMap = state.fst;
-           return (
-             pair.fst.fst === pair.snd.fst - delta ?
-               /^[a-z]$/.test (pair.fst.snd) ?
-                 /^[a-z]$/.test (pair.snd.snd) ?
-                   pair.fst.snd in typeVarMap ?
-                     typeVarMap[pair.fst.snd] === pair.snd.snd ?
-                       S.Just (state) :
-                       S.Nothing :
-                     S.elem (pair.snd.snd) (typeVarMap) ?
-                       S.Nothing :
-                       S.Just (S.mapLeft (S.insert (pair.fst.snd)
-                                                   (pair.snd.snd))
-                                         (state)) :
-                   S.Nothing :
-                 pair.fst.snd === pair.snd.snd ?
-                   S.Just (state) :
-                   S.Nothing :
-               S.Nothing
-           );
-         });
-       }))
-      (S.Just (S.Pair (typeVarMap) (S.Pair (searchTokens) (slice))))
-      (S.zip (searchTokens) (slice));
+          function reducer(pair) {
+            return S.chain (function(state) {
+              var typeVarMap = state.fst;
+              return (
+                pair.fst.fst === pair.snd.fst - delta ?
+                  /^[a-z]$/.test (pair.fst.snd) ?
+                    /^[a-z]$/.test (pair.snd.snd) ?
+                      pair.fst.snd in typeVarMap ?
+                        typeVarMap[pair.fst.snd] === pair.snd.snd ?
+                          S.Just (state) :
+                          S.Nothing :
+                        S.elem (pair.snd.snd) (typeVarMap) ?
+                          S.Nothing :
+                          S.Just (S.mapLeft (S.insert (pair.fst.snd)
+                                                      (pair.snd.snd))
+                                            (state)) :
+                      S.Nothing :
+                    pair.fst.snd === pair.snd.snd ?
+                      S.Just (state) :
+                      S.Nothing :
+                  S.Nothing
+              );
+            });
+          }
+        }) (S.map (S.fst) (S.head (searchTokens)));
+      }) (S.lift2 (S.Pair) (S.head (slice)) (S.last (slice)));
+    }) (S.slice (offset) (offset + searchTokens.length) (actualTokens));
   });
 
   //  highlightSubstring :: (String -> String) -> String -> String -> String
