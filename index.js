@@ -24,28 +24,23 @@
   var SliceAfter  = 1 << 2;
 
   //  tokens :: StrMap Boolean
-  var tokens = {
-    /* eslint-disable key-spacing */
-    '::': SpaceBefore | SliceBefore | SliceAfter,
-    '=>': SpaceBefore | SliceBefore | SliceAfter,
-    '~>': SpaceBefore | SliceBefore | SliceAfter,
-    '->': SpaceBefore | SliceBefore | SliceAfter,
-    '()': SpaceBefore | SliceBefore | SliceAfter,
-    '{}': SpaceBefore | SliceBefore | SliceAfter,
-    '(':  SpaceBefore | SliceBefore | SliceAfter,
-    ')':  SpaceBefore | SliceBefore | SliceAfter,
-    '{':  SpaceBefore | SliceBefore | SliceAfter,
-    '}':  SpaceBefore | SliceBefore | SliceAfter,
-    ',':                SliceBefore | SliceAfter,
-    '?':                              SliceAfter
-    /* eslint-enable key-spacing */
-  };
+  var tokens = Object.create (null);
+  tokens['::'] = SpaceBefore | SliceBefore | SliceAfter;
+  tokens['=>'] = SpaceBefore | SliceBefore | SliceAfter;
+  tokens['~>'] = SpaceBefore | SliceBefore | SliceAfter;
+  tokens['->'] = SpaceBefore | SliceBefore | SliceAfter;
+  tokens['()'] = SpaceBefore | SliceBefore | SliceAfter;
+  tokens['{}'] = SpaceBefore | SliceBefore | SliceAfter;
+  tokens['(']  = SpaceBefore | SliceBefore | SliceAfter;
+  tokens[')']  = SpaceBefore | SliceBefore | SliceAfter;
+  tokens['{']  = SpaceBefore | SliceBefore | SliceAfter;
+  tokens['}']  = SpaceBefore | SliceBefore | SliceAfter;
+  tokens[',']  =               SliceBefore | SliceAfter;
+  tokens['?']  =                             SliceAfter;
 
   //  tokenInfo :: Pair Integer String -> Maybe Info
   function tokenInfo(pair) {
-    return Object.prototype.hasOwnProperty.call (tokens, pair.snd) ?
-           S.Just (tokens[pair.snd]) :
-           S.Nothing;
+    return pair.snd in tokens ? S.Just (tokens[pair.snd]) : S.Nothing;
   }
 
   //  tokenAttr :: Info -> Info -> Boolean
@@ -115,9 +110,8 @@
     var depth = 0;
     for (var idx = 0; idx < pairs.length; idx += 1) {
       var pair = pairs[idx];
-      var isToken = Object.prototype.hasOwnProperty.call (tokens, pair.snd);
       s += repeat (')') (depth - pair.fst) +
-           (isToken && !(spaceBefore (tokens[pair.snd])) ? '' : s && ' ') +
+           (S.maybe (true) (spaceBefore) (tokenInfo (pair)) ? s && ' ' : '') +
            repeat ('(') (pair.fst - depth) +
            pair.snd;
       depth = pair.fst;
