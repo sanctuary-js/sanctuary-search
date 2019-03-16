@@ -237,6 +237,10 @@ suite ('search', () => {
        (S.Right ('match@[All]@ :: GlobalRegExp -> String -> Array { match :: String, groups :: Array (Maybe String) }'));
     eq (match ('chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b') ('a -> m'))
        (S.Left ('chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b'));
+    eq (match ('T :: a -> (a -> b) -> b') ('a -> a'))
+       (S.Left ('T :: a -> (a -> b) -> b'));
+    eq (match ('T :: a -> (a -> b) -> b') ('a -> a -> b -> b'))
+       (S.Left ('T :: a -> (a -> b) -> b'));
   });
 
 });
