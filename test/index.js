@@ -137,6 +137,25 @@ suite ('search', () => {
     eq (match ('K :: a -> b -> a') ('x -> y -> z')) (S.Left ('K :: a -> b -> a'));
   });
 
+  test ('parens in search string are significant', () => {
+    var lift2 = 'lift2 :: Apply f => (a -> b -> c) -> f a -> f b -> f c';
+
+    eq (match (lift2) ('x -> y'))
+       (S.Right ('lift2 :: Apply f => (@[a -> b]@ -> c) -> f a -> f b -> f c'));
+
+    eq (match (lift2) ('(x -> y)'))
+       (S.Left (lift2));
+
+    eq (match (lift2) ('x -> y -> z'))
+       (S.Right ('lift2 :: Apply f => (@[a -> b -> c]@) -> f a -> f b -> f c'));
+
+    eq (match (lift2) ('(x -> y -> z)'))
+       (S.Right ('lift2 :: Apply f => @[(a -> b -> c)]@ -> f a -> f b -> f c'));
+
+    eq (match (lift2) ('((x -> y -> z))'))
+       (S.Left (lift2));
+  });
+
   test ('TK', () => {
     eq (match ('map :: Functor f => (a -> b) -> f a -> f b') ('a -> b'))
        (S.Right ('map :: Functor f => (@[a -> b]@) -> f a -> f b'));
@@ -166,8 +185,6 @@ suite ('search', () => {
        (S.Right ('T :: a -> (@[a -> b]@) -> b'));
     eq (match ('T :: a -> (a -> b) -> b') ('(a -> b)'))
        (S.Right ('T :: a -> @[(a -> b)]@ -> b'));
-    eq (match ('lift2 :: Apply f => (a -> b -> c) -> f a -> f b -> f c') ('(a -> b)'))
-       (S.Left ('lift2 :: Apply f => (a -> b -> c) -> f a -> f b -> f c'));
   });
 
 });
