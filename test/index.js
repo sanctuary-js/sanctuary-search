@@ -198,6 +198,34 @@ suite ('search', () => {
        (S.Left (toEither));
   });
 
+  test ('uncurried function types can be matched', () => {
+    var curry3 = '((a, b, c) -> d) -> a -> b -> c -> d';
+
+    eq (match (curry3) ('x'))
+       (S.Right ('((@[a]@, b, c) -> d) -> @[a]@ -> b -> c -> d'));
+
+    eq (match (curry3) ('x, y'))
+       (S.Right ('((@[a, b]@, c) -> d) -> a -> b -> c -> d'));
+
+    eq (match (curry3) ('x, y, z'))
+       (S.Right ('((@[a, b, c]@) -> d) -> a -> b -> c -> d'));
+
+    eq (match (curry3) ('(x, y, z)'))
+       (S.Right ('(@[(a, b, c)]@ -> d) -> a -> b -> c -> d'));
+
+    eq (match (curry3) ('(x, y, z) -> w'))
+       (S.Right ('(@[(a, b, c) -> d]@) -> a -> b -> c -> d'));
+
+    eq (match (curry3) ('((x, y, z) -> w)'))
+       (S.Right ('@[((a, b, c) -> d)]@ -> a -> b -> c -> d'));
+
+    eq (match (curry3) ('(((x, y, z)) -> w)'))
+       (S.Left (curry3));
+
+    eq (match (curry3) ('(((x, y, z) -> w))'))
+       (S.Left (curry3));
+  });
+
   test ('TK', () => {
     eq (match ('bimap :: Bifunctor f => (a -> b) -> (c -> d) -> f a c -> f b d') ('a c -> f b d'))
        (S.Left ('bimap :: Bifunctor f => (a -> b) -> (c -> d) -> f a c -> f b d'));
@@ -209,8 +237,6 @@ suite ('search', () => {
        (S.Right ('match@[All]@ :: GlobalRegExp -> String -> Array { match :: String, groups :: Array (Maybe String) }'));
     eq (match ('chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b') ('a -> m'))
        (S.Left ('chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b'));
-    eq (match ('curry3 :: ((a, b, c) -> d) -> a -> b -> c -> d') ('x -> y'))
-       (S.Right ('curry3 :: ((a, b, c) -> d) -> @[a -> b]@ -> c -> d'));
   });
 
 });
