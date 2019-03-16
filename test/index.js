@@ -85,12 +85,31 @@ suite ('search', () => {
     });
   });
 
+  test ('exact signature always matches', () => {
+    signatures.forEach (signature => {
+      eq (match (signature) (signature))
+         (S.Right ('@[' + signature + ']@'));
+    });
+  });
+
   test ('unbalanced search string never matches', () => {
     signatures.forEach (signature => {
       eq (match (signature) ('(')) (S.Left (signature));
       eq (match (signature) (')')) (S.Left (signature));
       eq (match (signature) ('{')) (S.Left (signature));
       eq (match (signature) ('}')) (S.Left (signature));
+    });
+  });
+
+  test ('"?" never matches', () => {
+    signatures.forEach (signature => {
+      eq (match (signature) ('?')) (S.Left (signature));
+    });
+  });
+
+  test ('"::" never matches', () => {
+    signatures.forEach (signature => {
+      eq (match (signature) ('::')) (S.Left (signature));
     });
   });
 
