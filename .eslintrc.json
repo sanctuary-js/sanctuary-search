@@ -1,4 +1,10 @@
 {
   "root": true,
-  "extends": ["./node_modules/sanctuary-style/eslint-common.json"]
+  "extends": ["./node_modules/sanctuary-style/eslint-common.json"],
+  "overrides": [
+    {
+      "files": ["*.md"],
+      "globals": {"S": false, "em": false, "search": false}
+    }
+  ]
 }

@@ -13,7 +13,16 @@
 //                         '[[]]
 //. # sanctuary-search
 //.
-//. TK.
+//. This package exports a function for completely or partially matching
+//. Hindley–Milner [type signatures][]. The matching algorithm is more
+//. sophisticated than substring matching in several respects:
+//.
+//.   - whitespace is not significant (beyond its role in separating tokens);
+//.   - function name searches are case-insensitive;
+//.   - type variable substitution may occur, allowing `'x -> x'` to match
+//.     `'I :: a -> a'`; and
+//.   - incomplete types are not matched (`'s a'` does not match
+//.     `'compose :: Semigroupoid s => s b c -> s a b -> s a c'`).
 
 (function(f) {
 
@@ -279,7 +288,46 @@
                          S.tagBy (S.complement (S.equals ([]))) (matches)));
   });
 
-  //  search :: (String -> String) -> String -> String -> Either String String
+  //# search :: (String -> String) -> String -> String -> Either String String
+  //.
+  //. Takes a “highlighting” function, a search string, and a signature string.
+  //. Returns the canonically formatted signature with matches highlighted,
+  //. wrapped in a Right (if there is at least one match) or a Left (if there
+  //. are no matches).
+  //.
+  //. This “highlighting” function, `em`, will be used in subsequent snippets:
+  //.
+  //. ```javascript
+  //. > const em = s => '@[' + s + ']@'
+  //. ```
+  //.
+  //. The search string may match multiple tokens:
+  //.
+  //. ```javascript
+  //. > search (em) ('String -> String') ('trim :: String -> String')
+  //. S.Right ('trim :: @[String -> String]@')
+  //. ```
+  //.
+  //. The search string may match multiple slices of the signature:
+  //.
+  //. ```javascript
+  //. > search (em) ('String') ('trim :: String -> String')
+  //. S.Right ('trim :: @[String]@ -> @[String]@')
+  //. ```
+  //.
+  //. Type variable substitution permits different type variables to be used:
+  //.
+  //. ```javascript
+  //. > search (em) ('x -> x') ('I :: a -> a')
+  //. S.Right ('I :: @[a -> a]@')
+  //. ```
+  //.
+  //. Only one-to-one type variable substitutions are permissible:
+  //.
+  //. ```javascript
+  //. > search (em) ('x -> y') ('I :: a -> a')
+  //. S.Left ('I :: a -> a')
+  //. ```
   var search = S.curry3 (function(em, searchString, signatureString) {
     return S.fromMaybe (S.Left (signatureString))
                        (S.lift2 (matchTokens (em))
@@ -290,3 +338,5 @@
   return search;
 
 }));
+
+//. [type signatures]:          https://sanctuary.js.org/#types
