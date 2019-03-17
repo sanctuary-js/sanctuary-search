@@ -1,0 +1,33 @@
+#!/usr/bin/env node
+
+'use strict';
+
+const fs = require ('fs');
+const path = require ('path');
+
+const S = (require ('sanctuary')).create ({checkTypes: false, env: []});
+
+const search = require ('..');
+
+
+//    signatures :: Array String
+const signatures = S.pipe ([
+  S.lines,
+  S.mapMaybe (S.match (S.regex ('') ('^[ ]*//# (.*)$'))),
+  S.mapMaybe (S.pipe ([S.prop ('groups'), S.head, S.join])),
+]) (fs.readFileSync (
+  path.join (__dirname, '..', 'node_modules', 'sanctuary', 'index.js'),
+  {encoding: 'utf8'}
+));
+
+//    invert :: String -> String
+const invert = s => '\u001B[7m' + s + '\u001B[0m';
+
+process.stdout.write (
+  S.unlines (S.maybe (signatures)
+                     (S.compose (S.rights)
+                                (S.compose (S.flip (S.map) (signatures))
+                                           (search (invert))))
+                     (S.chain (S.head)
+                              (S.drop (2) (process.argv))))
+);

@@ -298,7 +298,9 @@
   //. This “highlighting” function, `em`, will be used in subsequent snippets:
   //.
   //. ```javascript
+  //. > // eslint-disable-next-line no-unused-vars
   //. > const em = s => '@[' + s + ']@'
+  //. undefined
   //. ```
   //.
   //. The search string may match multiple tokens:

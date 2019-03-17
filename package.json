@@ -7,7 +7,9 @@
     "type": "git",
     "url": "git://github.com/sanctuary-js/sanctuary-search.git"
   },
+  "bin": "./bin/sanctuary-search",
   "files": [
+    "/bin/sanctuary-search",
     "/LICENSE",
     "/README.md",
     "/index.js",
