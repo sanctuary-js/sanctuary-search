@@ -141,7 +141,7 @@ suite ('search', () => {
   });
 
   test ('parens in search string are significant', () => {
-    var lift2 = 'lift2 :: Apply f => (a -> b -> c) -> f a -> f b -> f c';
+    const lift2 = 'lift2 :: Apply f => (a -> b -> c) -> f a -> f b -> f c';
 
     eq (match (lift2) ('x -> y'))
        (S.Right ('lift2 :: Apply f => (@[a -> b]@ -> c) -> f a -> f b -> f c'));
@@ -158,7 +158,7 @@ suite ('search', () => {
     eq (match (lift2) ('((x -> y -> z))'))
        (S.Left (lift2));
 
-    var chainRec = 'chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b';
+    const chainRec = 'chainRec :: ChainRec m => TypeRep m -> (a -> m (Either a b)) -> a -> m b';
 
     eq (match (chainRec) ('Either a b'))
        (S.Right ('chainRec :: ChainRec m => TypeRep m -> (a -> m (@[Either a b]@)) -> a -> m b'));
@@ -177,7 +177,7 @@ suite ('search', () => {
   });
 
   test ('type variables may be followed by "?"', () => {
-    var toEither = 'toEither :: a -> b? -> Either a b';
+    const toEither = 'toEither :: a -> b? -> Either a b';
 
     eq (match (toEither) ('x'))
        (S.Right ('toEither :: @[a]@ -> b? -> Either a b'));
@@ -199,7 +199,7 @@ suite ('search', () => {
   });
 
   test ('uncurried function types can be matched', () => {
-    var curry3 = '((a, b, c) -> d) -> a -> b -> c -> d';
+    const curry3 = '((a, b, c) -> d) -> a -> b -> c -> d';
 
     eq (match (curry3) ('x'))
        (S.Right ('((@[a]@, b, c) -> d) -> @[a]@ -> b -> c -> d'));
