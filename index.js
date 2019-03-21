@@ -299,7 +299,6 @@
   //.
   //. ```javascript
   //. > const em = s => '@[' + s + ']@'
-  //. undefined
   //. ```
   //.
   //. The search string may match multiple tokens:
