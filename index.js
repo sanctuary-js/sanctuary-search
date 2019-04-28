@@ -45,45 +45,20 @@
 
   'use strict';
 
-  var SpaceBefore = 1 << 0;
-  var SliceBefore = 1 << 1;
-  var SliceAfter  = 1 << 2;
-
   //  tokens :: StrMap Boolean
-  var tokens = Object.create (null);
-  tokens['::'] = SpaceBefore | SliceBefore | SliceAfter;
-  tokens['=>'] = SpaceBefore | SliceBefore | SliceAfter;
-  tokens['~>'] = SpaceBefore | SliceBefore | SliceAfter;
-  tokens['->'] = SpaceBefore | SliceBefore | SliceAfter;
-  tokens['()'] = SpaceBefore | SliceBefore | SliceAfter;
-  tokens['{}'] = SpaceBefore | SliceBefore | SliceAfter;
-  tokens['(']  = SpaceBefore | SliceBefore | SliceAfter;
-  tokens[')']  = SpaceBefore | SliceBefore | SliceAfter;
-  tokens['{']  = SpaceBefore | SliceBefore | SliceAfter;
-  tokens['}']  = SpaceBefore | SliceBefore | SliceAfter;
-  tokens[',']  =               SliceBefore | SliceAfter;
-  tokens['?']  =                             SliceAfter;
-
-  //  tokenInfo :: Pair Integer String -> Maybe Info
-  function tokenInfo(pair) {
-    return pair.snd in tokens ? S.Just (tokens[pair.snd]) : S.Nothing;
-  }
-
-  //  tokenAttr :: Info -> Info -> Boolean
-  function tokenAttr(attr) {
-    return function(info) {
-      return (info & attr) > 0;
-    };
-  }
-
-  //  spaceBefore :: Info -> Boolean
-  var spaceBefore = tokenAttr (SpaceBefore);
-
-  //  sliceBefore :: Info -> Boolean
-  var sliceBefore = tokenAttr (SliceBefore);
-
-  //  sliceAfter :: Info -> Boolean
-  var sliceAfter = tokenAttr (SliceAfter);
+  var tokens = {
+    '::': true,
+    '=>': true,
+    '~>': true,
+    '->': true,
+    '()': true,
+    '{}': true,
+    '(': true,
+    ')': true,
+    '{': true,
+    '}': true,
+    ',': false
+  };
 
   //  syntax :: RegExp
   var syntax = S.pipe ([
@@ -137,12 +112,22 @@
     for (var idx = 0; idx < pairs.length; idx += 1) {
       var pair = pairs[idx];
       s += repeat (')') (depth - pair.fst) +
-           (S.maybe (true) (spaceBefore) (tokenInfo (pair)) ? s && ' ' : '') +
+           (S.fromMaybe (true) (S.value (pair.snd) (tokens)) ? s && ' ' : '') +
            repeat ('(') (pair.fst - depth) +
            pair.snd;
       depth = pair.fst;
     }
     return s + repeat (')') (depth);
+  }
+
+  //  normalTokenNotShallowerThan
+  //  :: Pair Integer String
+  //  -> Pair Integer String
+  //  -> Boolean
+  function normalTokenNotShallowerThan(p1) {
+    return function(p2) {
+      return S.isNothing (S.value (p2.snd) (tokens)) && p2.fst >= p1.fst;
+    };
   }
 
   //  sliceMatches
@@ -169,22 +154,13 @@
           var y = pair.snd;
           var a_ = S.chain (S.last) (S.take (i) (actualTokens));
           var z_ = S.chain (S.head) (S.drop (j) (actualTokens));
-          var bi = tokenInfo (b);
-          var yi = tokenInfo (y);
-          var ai = S.chain (tokenInfo) (a_);
-          var zi = S.chain (tokenInfo) (z_);
           var delta = b.fst - depth;
 
           return (
             delta < 0 ||
 
-            S.maybe (false) (S.complement (sliceAfter)) (ai) ||
-            S.maybe (false) (S.complement (sliceBefore)) (bi) ||
-            S.maybe (false) (S.complement (sliceAfter)) (yi) ||
-            S.maybe (false) (S.complement (sliceBefore)) (zi) ||
-
-            ai.isNothing && S.maybe (false) (S.on (S.gte) (S.fst) (b)) (a_) ||
-            zi.isNothing && S.maybe (false) (S.on (S.gte) (S.fst) (y)) (z_) ||
+            S.isJust (S.filter (normalTokenNotShallowerThan (b)) (a_)) ||
+            S.isJust (S.filter (normalTokenNotShallowerThan (y)) (z_)) ||
 
             depth > 0 && S.maybe (false) (S.on (S.equals) (S.fst) (b)) (a_) ||
             depth > 0 && S.maybe (false) (S.on (S.equals) (S.fst) (y)) (z_)
@@ -222,7 +198,8 @@
           }
         }) (S.map (S.fst) (S.head (searchTokens)));
       }) (S.lift2 (S.Pair) (S.head (slice)) (S.last (slice)));
-    }) (S.slice (i) (j) (actualTokens));
+    }) (S.chain (S.take (searchTokens.length))
+                (S.drop (offset) (actualTokens)));
   });
 
   //  highlightSubstring :: (String -> String) -> String -> String -> String

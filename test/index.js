@@ -101,12 +101,6 @@ suite ('search', () => {
     });
   });
 
-  test ('"?" never matches', () => {
-    signatures.forEach (signature => {
-      eq (match (signature) ('?')) (S.Left (signature));
-    });
-  });
-
   test ('"::" never matches', () => {
     signatures.forEach (signature => {
       eq (match (signature) ('::')) (S.Left (signature));
@@ -174,28 +168,6 @@ suite ('search', () => {
 
     eq (match (chainRec) ('(a -> m (Either a b))'))
        (S.Right ('chainRec :: ChainRec m => TypeRep m -> @[(a -> m (Either a b))]@ -> a -> m b'));
-  });
-
-  test ('type variables may be followed by "?"', () => {
-    const toEither = 'toEither :: a -> b? -> Either a b';
-
-    eq (match (toEither) ('x'))
-       (S.Right ('toEither :: @[a]@ -> b? -> Either a b'));
-
-    eq (match (toEither) ('x?'))
-       (S.Right ('toEither :: a -> @[b?]@ -> Either a b'));
-
-    eq (match (toEither) ('x -> y'))
-       (S.Left (toEither));
-
-    eq (match (toEither) ('x -> y?'))
-       (S.Right ('toEither :: @[a -> b?]@ -> Either a b'));
-
-    eq (match (toEither) ('x -> y? -> Either x y'))
-       (S.Right ('toEither :: @[a -> b? -> Either a b]@'));
-
-    eq (match (toEither) ('x -> y? -> Either x z'))
-       (S.Left (toEither));
   });
 
   test ('uncurried function types can be matched', () => {
