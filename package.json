@@ -19,7 +19,7 @@
     "sanctuary": "2.0.x"
   },
   "devDependencies": {
-    "sanctuary-scripts": "3.2.x"
+    "sanctuary-scripts": "4.0.x"
   },
   "scripts": {
     "doctest": "sanctuary-doctest",
