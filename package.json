@@ -16,7 +16,7 @@
     "/package.json"
   ],
   "dependencies": {
-    "sanctuary": "3.0.0"
+    "sanctuary": "3.1.0"
   },
   "devDependencies": {
     "sanctuary-scripts": "4.0.x"

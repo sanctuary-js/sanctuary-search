@@ -166,11 +166,11 @@
             depth > 0 && S.maybe (false) (S.on (S.equals) (S.fst) (y)) (z_)
           ) ?
             S.Nothing :
-            S.reduce (S.flip (reducer))
-                     (S.Just (S.Pair (typeVarMap)
-                                     (S.Pair (searchTokens)
-                                             (slice))))
-                     (S.zip (searchTokens) (slice));
+            S.reduce_ (reducer)
+                      (S.Just (S.Pair (typeVarMap)
+                                      (S.Pair (searchTokens)
+                                              (slice))))
+                      (S.zip (searchTokens) (slice));
 
           function reducer(pair) {
             return S.chain (function(state) {
