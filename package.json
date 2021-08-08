@@ -19,12 +19,15 @@
     "sanctuary": "3.1.0"
   },
   "devDependencies": {
-    "sanctuary-scripts": "4.0.x"
+    "sanctuary-scripts": "5.0.x"
   },
   "scripts": {
     "doctest": "sanctuary-doctest",
     "lint": "sanctuary-lint",
     "release": "sanctuary-release",
     "test": "npm run lint && sanctuary-test && npm run doctest"
+  },
+  "mocha": {
+    "ui": "tdd"
   }
 }
