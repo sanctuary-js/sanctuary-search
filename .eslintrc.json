@@ -4,7 +4,7 @@
   "overrides": [
     {
       "files": ["*.md"],
-      "globals": {"S": false, "em": false, "search": false},
+      "globals": {"S": "readonly", "em": "readonly", "search": "readonly"},
       "rules": {
         "func-style": ["error", "declaration", {"allowArrowFunctions": true}],
         "no-unused-vars": ["error", {"args": "none", "varsIgnorePattern": "^em$"}]
